@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拓樸排序程式碼同步演示</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e; /* VS Code dark theme bg */
+            --panel-bg: #252526;
+            --text-color: #d4d4d4;
+            --accent: #0e639c;
+            --highlight-line-bg: #f1c40f; /* 黃色高亮 */
+            --highlight-line-text: #000000;
+            --code-comment: #6a9955;
+            --code-keyword: #569cd6;
+            --code-num: #b5cea8;
+            --node-done: #2ecc71;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 { margin: 0 0 20px 0; text-align: center; }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            min-height: 0; /* Important for nested flex scroll */
+        }
+
+        /* 左側程式碼區域 */
+        .code-panel {
+            flex: 4;
+            background: var(--panel-bg);
+            border-radius: 8px;
+            overflow-y: auto;
+            border: 1px solid #3c3c3c;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .code-line {
+            padding: 0 15px;
+            white-space: pre-wrap;
+            display: flex;
+        }
+        .line-num {
+            color: #858585;
+            text-align: right;
+            width: 30px;
+            margin-right: 15px;
+            user-select: none;
+        }
+        .code-content { flex: 1; }
+        
+        /* 高亮行的樣式 */
+        .highlighted-line {
+            background-color: var(--highlight-line-bg);
+            color: var(--highlight-line-text);
+            font-weight: bold;
+        }
+        .highlighted-line .line-num {
+            color: #333;
+        }
+        .highlighted-line .comment { color: #333; } /* 高亮時註解變深色以便閱讀 */
+
+        /* 簡單的語法高亮 */
+        .keyword { color: var(--code-keyword); }
+        .comment { color: var(--code-comment); }
+        .num-val { color: var(--code-num); }
+
+
+        /* 右側視覺化區域 */
+        .viz-panel {
+            flex: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .graph-box, .data-box {
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #3c3c3c;
+        }
+
+        .graph-box { height: 300px; }
+        svg { width: 100%; height: 100%; }
+        
+        .node-circle {
+            fill: var(--panel-bg);
+            stroke: var(--text-color);
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+        .node-text {
+            fill: var(--text-color);
+            font-size: 16px;
+            font-weight: bold;
+            dominant-baseline: middle;
+            text-anchor: middle;
+        }
+        .edge {
+            stroke: var(--text-color);
+            stroke-width: 2px;
+            marker-end: url(#arrow);
+            opacity: 0.5;
+        }
+
+        /* 表格樣式 */
+        table { width: 100%; border-collapse: collapse; text-align: center; margin-top: 10px;}
+        th, td { padding: 8px; border: 1px solid #555; }
+        th { background: #333; }
+        .zero-highlight { background-color: rgba(241, 196, 15, 0.3); color: #fff; font-weight: bold;}
+        .stack-ptr-highlight { background-color: rgba(231, 76, 60, 0.3); }
+
+        /* Stack 和 Output 樣式 */
+        .stack-container {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 5px;
+            background: #333;
+            border-radius: 4px;
+            min-height: 30px;
+            align-items: center;
+        }
+        .stack-item {
+            background: var(--accent);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .output-container {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: var(--node-done);
+            margin-top: 10px;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+        }
+
+        /* 控制按鈕 */
+        .controls {
+            margin-top: auto;
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background: var(--bg-color); /* Ensure it sits on top of background */
+        }
+        button {
+            padding: 10px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-next { background: var(--accent); color: white; }
+        .btn-reset { background: #c0392b; color: white; }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        /* 動態狀態類別 */
+        .active-node-processing { fill: var(--highlight-line-bg) !important; stroke: #000 !important; }
+        .active-node-neighbor { fill: #e67e22 !important; stroke: #fff !important; }
+        .node-done { fill: var(--node-done) !important; stroke: #27ae60 !important; }
+        
+    </style>
+</head>
+<body>
+
+    <h2>Topological Sort C Code Execution Visualization</h2>
+
+    <div class="main-layout">
+        <div class="code-panel" id="codeContainer">
+            </div>
+
+        <div class="viz-panel">
+            <div class="graph-box">
+                 <svg id="graphSvg" viewBox="0 0 400 320">
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="19" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#d4d4d4" />
+                        </marker>
+                    </defs>
+                    <g id="edgesLayer"></g>
+                    <g id="nodesLayer"></g>
+                </svg>
+            </div>
+
+            <div class="data-box">
+                <strong>Data Structures (模擬 C 語言行為)</strong>
+                <div style="margin-top: 10px;">
+                    <code>top: </code> <span id="topVal">-1</span>
+                    <span style="margin-left: 20px; font-size: 0.9em; color: #aaa;">(註：C語法中，count欄位小於0時表示指向下一個Stack元素)</span>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Node (i)</th><th>V0</th><th>V1</th><th>V2</th><th>V3</th><th>V4</th><th>V5</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                         <tr id="countRow">
+                            </tr>
+                    </tbody>
+                </table>
+            </div>
+
+             <div class="data-box" style="flex:1;">
+                <strong>Logical View (便於理解)</strong>
+                <div style="margin-top: 15px;">
+                    Logical Stack (Top is right):
+                    <div class="stack-container" id="logicalStack"></div>
+                </div>
+                <div style="margin-top: 15px;">
+                    Output:
+                    <div class="output-container" id="outputVal"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-reset" onclick="init()">Reset</button>
+        <button class="btn-next" id="nextBtn" onclick="stepForward()">Next Step (執行高亮行)</button>
+    </div>
+
+
+<script>
+    // --- 1. 程式碼定義 (C Code Definition) ---
+    // 將圖片中的 C 語言程式碼逐行轉錄，用於顯示和高亮
+    const cCode = [
+        "void topsort(hdnodes graph[], int n)",
+        "{",
+        "    int i, j, k, top;",
+        "    node_pointer ptr;",
+        "    /* create a stack of vertices with no predecessors */",
+        "    top = -1;",
+        "    for (i = 0; i < n; i++)",
+        "        if (!graph[i].count) {",
+        "            graph[i].count = top;",
+        "            top = i;",
+        "        }",
+        "    for (i = 0; i < n; i++)",
+        "        if (top == -1) {",
+        "            fprintf(stderr,\"\\nNetwork terminated. \\n\");",
+        "            exit(1);",
+        "        }",
+        "        else {",
+        "            j = top;    /* unstack a vertex */",
+        "            top = graph[top].count;",
+        "            printf(\"%d \", j);",
+        "            for (ptr = graph[j].link; ptr; ptr = ptr->link) {",
+        "                /* decrease the count of the successor vertices of j */",
+        "                k = ptr->vertex;",
+        "                graph[k].count--;",
+        "                if (!graph[k].count) {",
+        "                    /* add vertex k to the stack */",
+        "                    graph[k].count = top;",
+        "                    top = k;",
+        "                }",
+        "            }",
+        "        }",
+        "}"
+    ];
+
+    // --- 2. 圖形資料定義 (Graph Data) ---
+    const nodePos = [
+        {x: 50, y: 160}, {x: 180, y: 60}, {x: 180, y: 160}, 
+        {x: 180, y: 260}, {x: 330, y: 110}, {x: 330, y: 260}
+    ];
+    // 初始的 Adjacency List 和 In-degrees
+    const initialAdj = [[1, 2, 3], [4], [4, 5], [5, 4], [], []];
+    const initialIndegrees = [0, 1, 1, 1, 3, 2];
+
+    // --- 3. 模擬狀態變數 (Simulation State) ---
+    // 這些變數模擬 C 語言程式執行時的記憶體狀態
+    let simState = {
+        // 模擬 C struct: graph[i].count (正數為入度，負數為 stack 指標)
+        graphCounts: [], 
+        // C 變數
+        i: 0, j: 0, k: 0, top: -1, 
+        // 模擬 C 指標 ptr (這裡用鄰居陣列的 index 代替)
+        neighborIdx: -1, 
+        // 輸出緩衝區
+        output: [],
+        // 邏輯 Stack (僅用於視覺化顯示，非 C 程式碼一部分)
+        logicalStack: [], 
+        // 執行控制
+        currentLine: 0, // 對應 cCode 陣列索引 (0-based)
+        stage: 'START', 
+        finished: false
+    };
+    
+    let highlightNode = null; // 目前正在處理的主節點 (j)
+    let highlightNeighbor = null; // 目前正在處理的鄰居節點 (k)
+    let processedNodes = []; // 已輸出完畢的節點
+
+    // --- 4. 初始化功能 (Initialization) ---
+    function renderCode() {
+        const container = document.getElementById('codeContainer');
+        container.innerHTML = '';
+        cCode.forEach((line, index) => {
+            const lineDiv = document.createElement('div');
+            lineDiv.className = `code-line ${index === simState.currentLine ? 'highlighted-line' : ''}`;
+            lineDiv.id = `line-${index}`;
+            
+            // 簡單的語法著色處理
+            let styledLine = line
+                .replace(/(\/\*.*?\*\/)/g, '<span class="comment">$1</span>')
+                .replace(/\b(void|int|for|if|else|while|return)\b/g, '<span class="keyword">$1</span>')
+                .replace(/\b(\d+|-1)\b/g, '<span class="num-val">$1</span>');
+
+            lineDiv.innerHTML = `<div class="line-num">${index + 1}</div><div class="code-content">${styledLine}</div>`;
+            container.appendChild(lineDiv);
+        });
+        // 自動捲動到高亮行
+        const highlighted = document.querySelector('.highlighted-line');
+        if(highlighted) {
+            const containerRect = container.getBoundingClientRect();
+            const lineRect = highlighted.getBoundingClientRect();
+            if (lineRect.bottom > containerRect.bottom || lineRect.top < containerRect.top) {
+                highlighted.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        }
+    }
+
+    function drawGraph() {
+        const svgEdges = document.getElementById('edgesLayer');
+        const svgNodes = document.getElementById('nodesLayer');
+        svgEdges.innerHTML = ''; svgNodes.innerHTML = '';
+
+        initialAdj.forEach((neighbors, u) => {
+            neighbors.forEach(v => {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", nodePos[u].x); line.setAttribute("y1", nodePos[u].y);
+                line.setAttribute("x2", nodePos[v].x); line.setAttribute("y2", nodePos[v].y);
+                line.setAttribute("class", "edge");
+                svgEdges.appendChild(line);
+            });
+        });
+
+        nodePos.forEach((pos, i) => {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("transform", `translate(${pos.x}, ${pos.y})`);
+            g.innerHTML = `<circle r="20" class="node-circle" id="node-c-${i}"></circle>
+                           <text class="node-text">V${i}</text>`;
+            svgNodes.appendChild(g);
+        });
+    }
+
+    function init() {
+        // 重置狀態
+        simState = {
+            graphCounts: [...initialIndegrees],
+            i: 0, j: 0, k: 0, top: -1,
+            neighborIdx: -1,
+            output: [],
+            logicalStack: [],
+            currentLine: 4, // 從第 5 行 top = -1 開始
+            stage: 'INIT_TOP',
+            finished: false
+        };
+        highlightNode = null;
+        highlightNeighbor = null;
+        processedNodes = [];
+        
+        drawGraph();
+        updateUI();
+        document.getElementById('nextBtn').disabled = false;
+        document.getElementById('nextBtn').textContent = "Next Step (執行高亮行)";
+    }
+
+    // --- 5. UI 更新 (Update UI) ---
+    function updateUI() {
+        renderCode();
+        
+        // 更新變數顯示
+        document.getElementById('topVal').textContent = simState.top;
+
+        // 更新 Count 表格
+        const countRow = document.getElementById('countRow');
+        countRow.innerHTML = '<th>Count</th>';
+        simState.graphCounts.forEach((c, idx) => {
+            const td = document.createElement('td');
+            td.textContent = c;
+            // 如果是負數，表示它現在是 Stack 的一部分指標
+            if (c < 0) td.classList.add('stack-ptr-highlight');
+            // 如果是 0 且還沒進 Stack，高亮提示
+            else if (c === 0 && !processedNodes.includes(idx) && !simState.logicalStack.includes(idx)) {
+                 td.classList.add('zero-highlight');
+            }
+            countRow.appendChild(td);
+        });
+
+        // 更新邏輯 Stack 和 Output 顯示
+        const stackContainer = document.getElementById('logicalStack');
+        stackContainer.innerHTML = '';
+        simState.logicalStack.forEach(val => {
+            stackContainer.innerHTML += `<div class="stack-item">${val}</div>`;
+        });
+
+        document.getElementById('outputVal').textContent = simState.output.join(' → ');
+
+        // 更新圖形節點顏色
+        for(let i=0; i<6; i++) {
+             const circle = document.getElementById(`node-c-${i}`);
+             circle.classList.remove('active-node-processing', 'active-node-neighbor', 'node-done');
+             if (processedNodes.includes(i)) circle.classList.add('node-done');
+             if (i === highlightNode) circle.classList.add('active-node-processing');
+             if (i === highlightNeighbor) circle.classList.add('active-node-neighbor');
+        }
+
+        if (simState.finished) {
+             document.getElementById('nextBtn').disabled = true;
+             document.getElementById('nextBtn').textContent = "執行完畢";
+        }
+    }
+
+
+    // --- 6. 核心執行邏輯 (Step-by-step Execution) ---
+    // 這是一個狀態機，模擬 C 程式碼的控制流程
+    function stepForward() {
+        if (simState.finished) return;
+
+        // 重置暫時性的高亮
+        highlightNeighbor = null; 
+
+        switch(simState.stage) {
+            case 'INIT_TOP':
+                // 執行 line 5: top = -1;
+                simState.top = -1;
+                simState.currentLine = 6; // Move to 'for' loop
+                simState.stage = 'INIT_LOOP_CHECK';
+                break;
+
+            case 'INIT_LOOP_CHECK':
+                // 執行 line 6: for (i = 0; i < n; i++)
+                if (simState.i < 6) {
+                    simState.currentLine = 7; // Move to 'if'
+                    simState.stage = 'INIT_IF_CHECK';
+                } else {
+                    // 初始化迴圈結束，重置 i，進入主迴圈
+                    simState.i = 0; 
+                    simState.currentLine = 11; // Move to main 'for' loop
+                    simState.stage = 'MAIN_LOOP_CHECK';
+                }
+                break;
+
+            case 'INIT_IF_CHECK':
+                // 執行 line 7: if (!graph[i].count)
+                if (simState.graphCounts[simState.i] === 0) {
+                    simState.currentLine = 8; // Enter 'if' block
+                    simState.stage = 'INIT_PUSH_1';
+                } else {
+                    simState.i++; // Next iteration
+                    simState.currentLine = 6; // Back to 'for' check
+                    simState.stage = 'INIT_LOOP_CHECK';
+                }
+                break;
+            
+            case 'INIT_PUSH_1':
+                 // 執行 line 8: graph[i].count = top;
+                 simState.graphCounts[simState.i] = simState.top;
+                 simState.currentLine = 9;
+                 simState.stage = 'INIT_PUSH_2';
+                 break;
+
+            case 'INIT_PUSH_2':
+                // 執行 line 9: top = i;
+                simState.top = simState.i;
+                simState.logicalStack.push(simState.i); // 更新邏輯視圖
+                simState.i++;
+                simState.currentLine = 6; // Back to 'for' loop start
+                simState.stage = 'INIT_LOOP_CHECK';
+                break;
+
+            // --- 主迴圈階段 ---
+
+            case 'MAIN_LOOP_CHECK':
+                // 執行 line 11: for (i = 0; i < n; i++)
+                // 注意：原C代碼這裡用 i<n 迴圈其實寫得不好，但我們照實模擬
+                if (simState.i < 6) {
+                    simState.currentLine = 12; // Move to 'if (top == -1)'
+                    simState.stage = 'MAIN_IF_EMPTY';
+                } else {
+                    simState.finished = true;
+                    simState.currentLine = 30; // End of function
+                }
+                break;
+
+            case 'MAIN_IF_EMPTY':
+                // 執行 line 12: if (top == -1)
+                if (simState.top === -1) {
+                    // Stack empty, error/exit path (not reachable in this valid graph example)
+                    simState.currentLine = 14; 
+                    simState.finished = true;
+                } else {
+                    simState.currentLine = 17; // Move to 'else' block start
+                    simState.stage = 'POP_1';
+                }
+                break;
+            
+            case 'POP_1':
+                // 執行 line 17: j = top;
+                simState.j = simState.top;
+                highlightNode = simState.j;
+                simState.logicalStack.pop(); // 更新邏輯視圖
+                simState.currentLine = 18;
+                simState.stage = 'POP_2';
+                break;
+
+            case 'POP_2':
+                // 執行 line 18: top = graph[top].count;
+                simState.top = simState.graphCounts[simState.top];
+                // 恢復被當作指標的 count 值 (雖然C代碼沒做，但為了視覺化正確顯示入度為0)
+                simState.graphCounts[simState.j] = 0; 
+                simState.currentLine = 19;
+                simState.stage = 'PRINT';
+                break;
+
+            case 'PRINT':
+                // 執行 line 19: printf(... j);
+                simState.output.push(simState.j);
+                processedNodes.push(simState.j);
+                simState.neighborIdx = 0; // 準備開始掃描鄰居
+                simState.currentLine = 20; // Move to neighbor 'for' loop
+                simState.stage = 'NEIGHBOR_LOOP_CHECK';
+                break;
+
+            // --- 處理鄰居階段 ---
+
+            case 'NEIGHBOR_LOOP_CHECK':
+                // 執行 line 20: for (ptr = graph[j].link...)
+                const neighbors = initialAdj[simState.j];
+                if (simState.neighborIdx < neighbors.length) {
+                    simState.currentLine = 22; // Move to inside loop body
+                    simState.stage = 'GET_NEIGHBOR';
+                } else {
+                    // 鄰居處理完畢，回到主迴圈
+                    highlightNode = null;
+                    simState.i++;
+                    simState.currentLine = 11;
+                    simState.stage = 'MAIN_LOOP_CHECK';
+                }
+                break;
+
+            case 'GET_NEIGHBOR':
+                // 執行 line 22: k = ptr->vertex;
+                simState.k = initialAdj[simState.j][simState.neighborIdx];
+                highlightNeighbor = simState.k;
+                simState.currentLine = 23;
+                simState.stage = 'DECREASE_COUNT';
+                break;
+            
+            case 'DECREASE_COUNT':
+                // 執行 line 23: graph[k].count--;
+                simState.graphCounts[simState.k]--;
+                highlightNeighbor = simState.k; // Keep highlight
+                simState.currentLine = 24;
+                simState.stage = 'CHECK_ZERO_COUNT';
+                break;
+            
+            case 'CHECK_ZERO_COUNT':
+                // 執行 line 24: if (!graph[k].count)
+                highlightNeighbor = simState.k;
+                if (simState.graphCounts[simState.k] === 0) {
+                    simState.currentLine = 26; // Enter 'if'
+                    simState.stage = 'NEIGHBOR_PUSH_1';
+                } else {
+                    simState.neighborIdx++; // Next neighbor
+                    simState.currentLine = 20; // Back to loop check
+                    simState.stage = 'NEIGHBOR_LOOP_CHECK';
+                }
+                break;
+
+            case 'NEIGHBOR_PUSH_1':
+                // 執行 line 26: graph[k].count = top;
+                simState.graphCounts[simState.k] = simState.top;
+                highlightNeighbor = simState.k;
+                simState.currentLine = 27;
+                simState.stage = 'NEIGHBOR_PUSH_2';
+                break;
+            
+            case 'NEIGHBOR_PUSH_2':
+                // 執行 line 27: top = k;
+                simState.top = simState.k;
+                simState.logicalStack.push(simState.k); // 更新邏輯視圖
+                highlightNeighbor = simState.k;
+                simState.neighborIdx++; // Next neighbor
+                simState.currentLine = 20; // Back to loop check
+                simState.stage = 'NEIGHBOR_LOOP_CHECK';
+                break;
+        }
+        updateUI();
+    }
+
+    // 啟動
+    init();
+
+</script>
+</body>
+</html>
