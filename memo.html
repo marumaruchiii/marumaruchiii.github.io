@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>拓樸排序程式碼同步演示</title>
+    <title>拓樸排序程式碼同步演示 (無重設 Count)</title>
     <style>
         :root {
             --bg-color: #1e1e1e;
@@ -182,7 +182,7 @@
 </head>
 <body>
 
-    <h2>Topological Sort C Code Execution Visualization </h2>
+    <h2>Topological Sort C Code Execution Visualization (嚴格遵守 C 碼邏輯)</h2>
 
     <div class="main-layout">
         <div class="code-panel" id="codeContainer"></div>
@@ -204,7 +204,7 @@
                 <strong>Data Structures (模擬 C 語言行為)</strong>
                 <div style="margin-top: 10px;">
                     <code>top: </code> <span id="topVal">-1</span>
-                    <span style="margin-left: 20px; font-size: 0.9em; color: #aaa;">(註：count欄位為負數時表示指向下一個Stack元素)</span>
+                    <span style="margin-left: 20px; font-size: 0.9em; color: #aaa;">(註：Count 欄位為正數時才是入度；負數/數字時為 Stack 指標或**已處理的垃圾值**。)</span>
                 </div>
                 
                 <table>
@@ -323,7 +323,6 @@
 
     // 繪製程式碼、圖形、UI更新 (不變)
     function renderCode() {
-        // ... (程式碼渲染邏輯不變)
         const container = document.getElementById('codeContainer');
         container.innerHTML = '';
         cCode.forEach((line, index) => {
@@ -383,10 +382,11 @@
         simState.graphCounts.forEach((c, idx) => {
             const td = document.createElement('td');
             td.textContent = c;
-            if (c < 0) td.classList.add('stack-ptr-highlight');
-            else if (c === 0 && !processedNodes.includes(idx) && !simState.logicalStack.includes(idx)) {
-                 td.classList.add('zero-highlight');
-            }
+            // Highlight based on current purpose: 0-count for push
+            if (c === 0 && !processedNodes.includes(idx)) td.classList.add('zero-highlight');
+            // Nodes that were processed will retain their pointer value, which might be negative or positive
+            // We use processedNodes array to show they are done, but do not rely on count==0
+            
             countRow.appendChild(td);
         });
 
@@ -401,6 +401,7 @@
         for(let i=0; i<6; i++) {
              const circle = document.getElementById(`node-c-${i}`);
              circle.classList.remove('active-node-processing', 'active-node-neighbor', 'node-done');
+             // V0/V1/...V5 node is done if it is in the output (processedNodes)
              if (processedNodes.includes(i)) circle.classList.add('node-done');
              if (i === highlightNode) circle.classList.add('active-node-processing');
              if (i === highlightNeighbor) circle.classList.add('active-node-neighbor');
@@ -420,7 +421,6 @@
 
 
     // --- 5. 前進邏輯 (Step Forward Logic) ---
-    // 將核心邏輯獨立，方便歷史記錄存取
     function stepForwardLogic() {
         
         // 儲存當前狀態到歷史記錄 (Push current state)
@@ -437,12 +437,14 @@
 
         switch(simState.stage) {
             case 'INIT_TOP':
+                // Line 5: top = -1;
                 simState.top = -1;
                 simState.currentLine = 6; 
                 simState.stage = 'INIT_LOOP_CHECK';
                 break;
 
             case 'INIT_LOOP_CHECK':
+                // Line 6: for (i = 0; i < n; i++)
                 if (simState.i < 6) {
                     simState.currentLine = 7;
                     simState.stage = 'INIT_IF_CHECK';
@@ -454,6 +456,7 @@
                 break;
 
             case 'INIT_IF_CHECK':
+                // Line 7: if (!graph[i].count) {
                 if (simState.graphCounts[simState.i] === 0) {
                     simState.currentLine = 8;
                     simState.stage = 'INIT_PUSH_1';
@@ -465,12 +468,14 @@
                 break;
             
             case 'INIT_PUSH_1':
+                 // Line 8: graph[i].count = top;
                  simState.graphCounts[simState.i] = simState.top;
                  simState.currentLine = 9;
                  simState.stage = 'INIT_PUSH_2';
                  break;
 
             case 'INIT_PUSH_2':
+                // Line 9: top = i;
                 simState.top = simState.i;
                 simState.logicalStack.push(simState.i); 
                 simState.i++;
@@ -479,6 +484,7 @@
                 break;
 
             case 'MAIN_LOOP_CHECK':
+                // Line 11: for (i = 0; i < n; i++)
                 if (simState.i < 6) {
                     simState.currentLine = 12;
                     simState.stage = 'MAIN_IF_EMPTY';
@@ -489,16 +495,18 @@
                 break;
 
             case 'MAIN_IF_EMPTY':
+                // Line 12: if (top == -1) {
                 if (simState.top === -1) {
                     simState.currentLine = 14; 
                     simState.finished = true;
                 } else {
-                    simState.currentLine = 17;
+                    simState.currentLine = 17; // else {
                     simState.stage = 'POP_1';
                 }
                 break;
             
             case 'POP_1':
+                // Line 17: j = top;
                 simState.j = simState.top;
                 highlightNode = simState.j;
                 simState.logicalStack.pop(); 
@@ -507,21 +515,24 @@
                 break;
 
             case 'POP_2':
+                // Line 18: top = graph[top].count;
+                // 此處不再重設 graph[j].count = 0，保持其為舊的指標值 (C code 原本的行為)
                 simState.top = simState.graphCounts[simState.top];
-                simState.graphCounts[simState.j] = 0; 
                 simState.currentLine = 19;
                 simState.stage = 'PRINT';
                 break;
 
             case 'PRINT':
+                // Line 19: printf("%d ", j);
                 simState.output.push(simState.j);
-                processedNodes.push(simState.j);
+                processedNodes.push(simState.j); // 用此陣列標記節點已完成 (綠色)
                 simState.neighborIdx = 0;
                 simState.currentLine = 20;
                 simState.stage = 'NEIGHBOR_LOOP_CHECK';
                 break;
 
             case 'NEIGHBOR_LOOP_CHECK':
+                // Line 20: for (ptr = graph[j].link; ptr; ptr = ptr->link)
                 const neighbors = initialAdj[simState.j];
                 if (simState.neighborIdx < neighbors.length) {
                     simState.currentLine = 22;
@@ -535,6 +546,7 @@
                 break;
 
             case 'GET_NEIGHBOR':
+                // Line 22: k = ptr->vertex;
                 simState.k = initialAdj[simState.j][simState.neighborIdx];
                 highlightNeighbor = simState.k;
                 simState.currentLine = 23;
@@ -542,6 +554,7 @@
                 break;
             
             case 'DECREASE_COUNT':
+                // Line 23: graph[k].count--;
                 simState.graphCounts[simState.k]--;
                 highlightNeighbor = simState.k;
                 simState.currentLine = 24;
@@ -549,6 +562,7 @@
                 break;
             
             case 'CHECK_ZERO_COUNT':
+                // Line 24: if (!graph[k].count) {
                 highlightNeighbor = simState.k;
                 if (simState.graphCounts[simState.k] === 0) {
                     simState.currentLine = 26;
@@ -561,6 +575,7 @@
                 break;
 
             case 'NEIGHBOR_PUSH_1':
+                // Line 26: graph[k].count = top;
                 simState.graphCounts[simState.k] = simState.top;
                 highlightNeighbor = simState.k;
                 simState.currentLine = 27;
@@ -568,6 +583,7 @@
                 break;
             
             case 'NEIGHBOR_PUSH_2':
+                // Line 27: top = k;
                 simState.top = simState.k;
                 simState.logicalStack.push(simState.k); 
                 highlightNeighbor = simState.k;
@@ -586,11 +602,10 @@
     // --- 6. 上一步邏輯 (Step Backward Logic) ---
     function stepBackward() {
         if (history.length <= 1) {
-            // 如果只有初始狀態，則不執行
             return;
         }
         
-        // 移除最後一個狀態 (即當前狀態，因為它已經被歷史記錄保存了)
+        // 移除當前狀態
         history.pop();
         
         // 取得上一個狀態
@@ -612,4 +627,3 @@
 </script>
 </body>
 </html>
-
