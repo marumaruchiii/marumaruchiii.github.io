@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 12: 數位邏輯互動實驗室</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #475569;
+            --accent: #ef4444;
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --led-on: #10b981;
+            --led-off: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Microsoft JhengHei, sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 10px; }
+        p.subtitle { color: var(--secondary); margin-bottom: 30px; }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--secondary);
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Lab Panels */
+        .lab-panel {
+            background: var(--panel);
+            padding: 30px;
+            border-radius: 0 12px 12px 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: none;
+            min-height: 400px;
+        }
+        .lab-panel.active { display: block; }
+
+        /* Components */
+        .circuit-board {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .flip-flop {
+            width: 80px;
+            height: 100px;
+            background: #475569;
+            border: 2px solid #94a3b8;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            color: white;
+            font-size: 0.8rem;
+            position: relative;
+        }
+        
+        .led {
+            width: 30px;
+            height: 30px;
+            background: var(--led-off);
+            border-radius: 50%;
+            margin: 0 auto;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+        }
+        .led.on {
+            background: var(--led-on);
+            box-shadow: 0 0 15px var(--led-on);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-clk { background: var(--primary); color: white; }
+        .btn-clk:active { transform: scale(0.95); }
+        .btn-clr { background: var(--accent); color: white; }
+        
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Simulation Specifics */
+        .bit-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .explanation {
+            background: #e0f2fe;
+            border-left: 5px solid var(--primary);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            line-height: 1.6;
+        }
+
+        /* Counter Animations */
+        .ripple-delay-visual {
+            height: 5px;
+            background: #334155;
+            width: 100%;
+            margin-top: 5px;
+            position: relative;
+        }
+        .ripple-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0s;
+        }
+        .ripple-active .ripple-bar {
+            width: 100%;
+            transition: width 0.6s linear;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Chapter 12: 暫存器與計數器互動實驗室</h1>
+    <p class="subtitle">改編自您的講義：Registers and Counters (Introduction to Digital System)</p>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('lab1')">實驗 1: 基礎暫存器</button>
+            <button class="tab-btn" onclick="switchTab('lab2')">實驗 2: 移位暫存器</button>
+            <button class="tab-btn" onclick="switchTab('lab3')">實驗 3: 計數器大戰</button>
+        </div>
+
+        <div id="lab1" class="lab-panel active">
+            <h2>4-Bit 平行存取暫存器 (Parallel Access Register)</h2>
+            <p>此實驗模擬 4 個 D Flip-Flops 組成的暫存器。您可以設定 Data Input，控制 Load 訊號，並發送 Clock 脈衝。</p>
+            
+            <div class="circuit-board">
+                <div class="bit-group">
+                    <span style="color:white">D3</span>
+                    <label class="switch"><input type="checkbox" id="d3"><span class="slider"></span></label>
+                    <div class="flip-flop">
+                        <span>D</span>
+                        <div id="q3" class="led"></div>
+                        <span>Q3</span>
+                    </div>
+                </div>
+                <div class="bit-group">
+                    <span style="color:white">D2</span>
+                    <label class="switch"><input type="checkbox" id="d2"><span class="slider"></span></label>
+                    <div class="flip-flop">
+                        <span>D</span>
+                        <div id="q2" class="led"></div>
+                        <span>Q2</span>
+                    </div>
+                </div>
+                <div class="bit-group">
+                    <span style="color:white">D1</span>
+                    <label class="switch"><input type="checkbox" id="d1"><span class="slider"></span></label>
+                    <div class="flip-flop">
+                        <span>D</span>
+                        <div id="q1" class="led"></div>
+                        <span>Q1</span>
+                    </div>
+                </div>
+                <div class="bit-group">
+                    <span style="color:white">D0</span>
+                    <label class="switch"><input type="checkbox" id="d0"><span class="slider"></span></label>
+                    <div class="flip-flop">
+                        <span>D</span>
+                        <div id="q0" class="led"></div>
+                        <span>Q0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="toggle-wrapper">
+                    <strong>Load (載入):</strong>
+                    <label class="switch"><input type="checkbox" id="loadBtn"><span class="slider"></span></label>
+                </div>
+                <button class="btn-clk" onclick="pulseClockLab1()">⚡ Pulse Clock (時脈)</button>
+                <button class="btn-clr" onclick="clearLab1()">❌ Clear (清除)</button>
+            </div>
+
+            <div class="explanation" id="lab1-msg">
+                <strong>狀態說明：</strong> 請設定 D0-D3 開關，開啟 Load，然後按下 Clock 來載入資料。
+            </div>
+            <p style="font-size: 0.9em; color: gray;">[參考: PPT Slide 116-119]</p>
+        </div>
+
+        <div id="lab2" class="lab-panel">
+            <h2>4-Bit 移位暫存器 (SISO - Serial In Serial Out)</h2>
+            <p>資料會像火車一樣，一個接一個向右移動。</p>
+
+            <div class="circuit-board">
+                <div style="color: white; margin-right: 10px;">
+                    Serial In (SI)<br>
+                    <label class="switch"><input type="checkbox" id="si-input"><span class="slider"></span></label>
+                </div>
+                
+                <div class="flip-flop">
+                    <span>Q3</span>
+                    <div id="s3" class="led"></div>
+                </div>
+                <div style="color:white">→</div>
+                <div class="flip-flop">
+                    <span>Q2</span>
+                    <div id="s2" class="led"></div>
+                </div>
+                <div style="color:white">→</div>
+                <div class="flip-flop">
+                    <span>Q1</span>
+                    <div id="s1" class="led"></div>
+                </div>
+                <div style="color:white">→</div>
+                <div class="flip-flop">
+                    <span>Q0</span>
+                    <div id="s0" class="led"></div>
+                </div>
+                
+                <div style="color: white; margin-left: 10px;">
+                    Serial Out (SO)<br>
+                    <div id="so-output" class="led" style="width: 20px; height: 20px;"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-clk" onclick="shiftClock()">⚡ Shift Clock (移位)</button>
+                <button class="btn-clr" onclick="resetShift()">重置</button>
+            </div>
+
+            <div class="explanation">
+                <strong>原理：</strong> 每次時脈觸發，Q3 接收 SI 的值，Q2 接收 Q3 的值，以此類推。這就是 <strong>移位 (Shift)</strong> 運算。<br>
+                應用：序列通訊、乘除法運算。
+            </div>
+            <p style="font-size: 0.9em; color: gray;">[參考: PPT Slide 544-550]</p>
+        </div>
+
+        <div id="lab3" class="lab-panel">
+            <h2>非同步(Ripple) vs 同步(Synchronous) 計數器</h2>
+            <p>觀察 Ripple Counter 的「延遲效應」。為了讓您看清楚，我們將延遲放大了。</p>
+
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                
+                <div style="flex: 1; min-width: 300px; background: #334155; padding: 20px; border-radius: 8px; color: white;">
+                    <h3>🌊 Ripple Counter (非同步)</h3>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <div class="flip-flop">
+                            <span>Bit 2</span>
+                            <div id="r2" class="led"></div>
+                            <div class="ripple-delay-visual"><div id="bar2" class="ripple-bar"></div></div>
+                        </div>
+                        <div class="flip-flop">
+                            <span>Bit 1</span>
+                            <div id="r1" class="led"></div>
+                            <div class="ripple-delay-visual"><div id="bar1" class="ripple-bar"></div></div>
+                        </div>
+                        <div class="flip-flop">
+                            <span>Bit 0 (LSB)</span>
+                            <div id="r0" class="led"></div>
+                            <div class="ripple-delay-visual"><div id="bar0" class="ripple-bar"></div></div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.8em; text-align: center; margin-top:10px;">
+                        注意：Bit 0 翻轉後，才會觸發 Bit 1... 產生累積延遲。
+                    </p>
+                </div>
+
+                <div style="flex: 1; min-width: 300px; background: #334155; padding: 20px; border-radius: 8px; color: white;">
+                    <h3>⚡ Synchronous Counter (同步)</h3>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <div class="flip-flop">
+                            <span>Bit 2</span>
+                            <div id="sy2" class="led"></div>
+                        </div>
+                        <div class="flip-flop">
+                            <span>Bit 1</span>
+                            <div id="sy1" class="led"></div>
+                        </div>
+                        <div class="flip-flop">
+                            <span>Bit 0 (LSB)</span>
+                            <div id="sy0" class="led"></div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.8em; text-align: center; margin-top:10px;">
+                        注意：所有 Bits 由同一時脈觸發，同時翻轉。
+                    </p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-clk" onclick="countClock()">⚡ Count Pulse (計數)</button>
+                <button class="btn-clr" onclick="resetCounters()">Reset 000</button>
+            </div>
+            
+            <div class="explanation">
+                <strong>Ripple Counter 缺點：</strong> 當位元數增加時 (例如 64-bit)，累積的傳遞延遲 (Propagation Delay) 會導致運算速度變慢，甚至產生短暫的錯誤數值 (Glitches)。<br>
+                <strong>Synchronous Counter 優點：</strong> 雖然電路較複雜，但速度快且穩定。
+            </div>
+            <p style="font-size: 0.9em; color: gray;">[參考: PPT Slide 1046-1049, 1201]</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Tab Logic ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.lab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- Lab 1: Basic Register Logic ---
+        let regData = [0, 0, 0, 0]; // Q3, Q2, Q1, Q0
+
+        function pulseClockLab1() {
+            const load = document.getElementById('loadBtn').checked;
+            const msg = document.getElementById('lab1-msg');
+            
+            if (load) {
+                // Read Inputs
+                const d3 = document.getElementById('d3').checked ? 1 : 0;
+                const d2 = document.getElementById('d2').checked ? 1 : 0;
+                const d1 = document.getElementById('d1').checked ? 1 : 0;
+                const d0 = document.getElementById('d0').checked ? 1 : 0;
+                
+                // Update State
+                regData = [d3, d2, d1, d0];
+                updateLedsLab1();
+                msg.innerHTML = `<strong>狀態：</strong> 資料 <span style="color:blue">${d3}${d2}${d1}${d0}</span> 已載入 (Load=1)。`;
+            } else {
+                msg.innerHTML = `<strong>狀態：</strong> Load=0，暫存器保持原值 <span style="color:blue">${regData.join('')}</span> 不變。`;
+            }
+        }
+
+        function clearLab1() {
+            regData = [0, 0, 0, 0];
+            updateLedsLab1();
+            document.getElementById('lab1-msg').innerHTML = "<strong>狀態：</strong> 非同步清除 (Clear) 已觸發，資料歸零。";
+        }
+
+        function updateLedsLab1() {
+            document.getElementById('q3').className = regData[0] ? 'led on' : 'led';
+            document.getElementById('q2').className = regData[1] ? 'led on' : 'led';
+            document.getElementById('q1').className = regData[2] ? 'led on' : 'led';
+            document.getElementById('q0').className = regData[3] ? 'led on' : 'led';
+        }
+
+        // --- Lab 2: Shift Register Logic ---
+        let shiftReg = [0, 0, 0, 0];
+
+        function shiftClock() {
+            const si = document.getElementById('si-input').checked ? 1 : 0;
+            const so = shiftReg[3]; // The bit falling off
+
+            // Shift Right Logic: [3,2,1,0] -> 3 becomes SI, 2 becomes old 3...
+            shiftReg[3] = shiftReg[2];
+            shiftReg[2] = shiftReg[1];
+            shiftReg[1] = shiftReg[0];
+            shiftReg[0] = si; // Wait, mapping visuals: visual Q3 is left-most. Let's align array index 0 to Q3.
+            
+            // Re-aligning logic for Array [Q3, Q2, Q1, Q0]
+            // Right shift: Q0 takes Q1, Q1 takes Q2, Q2 takes Q3, Q3 takes SI
+            // Original array: [q3, q2, q1, q0]
+            // Let's use pop/unshift for standard right shift
+            
+            let outBit = shiftReg.pop(); // Remove last (Q0)
+            shiftReg.unshift(si);        // Add to front (Q3)
+
+            updateShiftLeds(outBit);
+        }
+
+        function resetShift() {
+            shiftReg = [0, 0, 0, 0];
+            updateShiftLeds(0);
+        }
+
+        function updateShiftLeds(outBit) {
+            document.getElementById('s3').className = shiftReg[0] ? 'led on' : 'led';
+            document.getElementById('s2').className = shiftReg[1] ? 'led on' : 'led';
+            document.getElementById('s1').className = shiftReg[2] ? 'led on' : 'led';
+            document.getElementById('s0').className = shiftReg[3] ? 'led on' : 'led';
+            document.getElementById('so-output').className = outBit ? 'led on' : 'led';
+        }
+
+        // --- Lab 3: Counter Logic ---
+        let countVal = 0;
+
+        function countClock() {
+            countVal = (countVal + 1) % 8; // Mod 8 (3-bit)
+            
+            // Get binary representation
+            const bin = countVal.toString(2).padStart(3, '0');
+            const b2 = parseInt(bin[0]);
+            const b1 = parseInt(bin[1]);
+            const b0 = parseInt(bin[2]);
+
+            // Synchronous Update (Instant)
+            updateSyncCounter(b2, b1, b0);
+
+            // Ripple Update (Visualized Delay)
+            animateRippleCounter(b2, b1, b0);
+        }
+
+        function resetCounters() {
+            countVal = 0;
+            updateSyncCounter(0,0,0);
+            updateRippleLeds(0,0,0);
+        }
+
+        function updateSyncCounter(b2, b1, b0) {
+            document.getElementById('sy2').className = b2 ? 'led on' : 'led';
+            document.getElementById('sy1').className = b1 ? 'led on' : 'led';
+            document.getElementById('sy0').className = b0 ? 'led on' : 'led';
+        }
+
+        function animateRippleCounter(targetB2, targetB1, targetB0) {
+            // Ripple Logic: LSB changes first, creating a "ripple" to MSB
+            // We use setTimeout to fake the propagation delay
+            
+            // Step 1: Bit 0 changes
+            document.getElementById('bar0').parentElement.classList.add('ripple-active');
+            setTimeout(() => {
+                document.getElementById('r0').className = targetB0 ? 'led on' : 'led';
+                document.getElementById('bar0').parentElement.classList.remove('ripple-active');
+                
+                // Step 2: Bit 1 changes (after delay)
+                document.getElementById('bar1').parentElement.classList.add('ripple-active');
+                setTimeout(() => {
+                    document.getElementById('r1').className = targetB1 ? 'led on' : 'led';
+                    document.getElementById('bar1').parentElement.classList.remove('ripple-active');
+
+                    // Step 3: Bit 2 changes (after more delay)
+                    document.getElementById('bar2').parentElement.classList.add('ripple-active');
+                    setTimeout(() => {
+                        document.getElementById('r2').className = targetB2 ? 'led on' : 'led';
+                        document.getElementById('bar2').parentElement.classList.remove('ripple-active');
+                    }, 300); // Delay for bit 2
+
+                }, 300); // Delay for bit 1
+
+            }, 0); // Immediate for bit 0 start
+        }
+
+        function updateRippleLeds(b2, b1, b0) {
+            document.getElementById('r2').className = b2 ? 'led on' : 'led';
+            document.getElementById('r1').className = b1 ? 'led on' : 'led';
+            document.getElementById('r0').className = b0 ? 'led on' : 'led';
+        }
+
+    </script>
+</body>
+</html>
