@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數位系統第12章：暫存器與計數器互動教學</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #475569;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --on: #22c55e;
+            --off: #e2e8f0;
+        }
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 { color: #0f172a; }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 25px;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* 視覺化元件樣式 */
+        .bit-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        .bit {
+            width: 50px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--secondary);
+            border-radius: 6px;
+            font-size: 1.5rem;
+            position: relative;
+        }
+        .bit.active {
+            background-color: #dcfce7;
+            border-color: var(--on);
+            color: #15803d;
+        }
+        .bit-label {
+            font-size: 0.8rem;
+            margin-top: -5px;
+            color: #64748b;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        button.action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button.action-btn.secondary { background: var(--secondary); }
+        
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.95rem;
+        }
+        .citation {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            vertical-align: super;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: center;
+        }
+        th { background-color: #f1f5f9; }
+        
+        /* Transition Graph Visualization */
+        .state-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .current-state {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+            transition: all 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>數位系統第12章：互動式學習指南</h1>
+    <p>本互動網頁整合了暫存器、移位暫存器與計數器設計的核心概念。</p>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="showSection('registers')">12.1 暫存器基礎</button>
+        <button class="tab-btn" onclick="showSection('shift')">12.2 移位暫存器</button>
+        <button class="tab-btn" onclick="showSection('counters')">12.3 二進位計數器</button>
+        <button class="tab-btn" onclick="showSection('design')">12.4 & 12.5 計數器設計</button>
+    </div>
+
+    <div id="registers" class="section active">
+        <div class="card">
+            <h2>暫存器 (Registers) 與載入控制</h2>
+            <div class="info-box">
+                <p>暫存器是由一組共用時脈 (Clock) 的正反器 (通常是 D Flip-Flops) 所組成 [cite: 10]。它可以儲存多位元的資訊。</p>
+                <p>載入資料有兩種方式：</p>
+                <ul>
+                    <li><strong>Gated Clock (閘控時脈)：</strong> 將 Load 訊號與 Clock 做 AND 運算。缺點是可能造成時序問題 (Timing problems) [cite: 86]。</li>
+                    <li><strong>Clock Enable (時脈致能)：</strong> 使用帶有 CE (Clock Enable) 端的正反器。當 Load=0 時，暫存器保持原值；當 Load=1 時，在時脈邊緣載入新值 [cite: 89, 90]。</li>
+                </ul>
+            </div>
+
+            <h3>4-bit 暫存器模擬 (含 Parallel Load)</h3>
+            <div class="bit-container" id="reg-bits">
+                </div>
+            
+            <div style="text-align: center; margin-bottom: 10px;">
+                <label>輸入資料 (D inputs): </label>
+                <select id="reg-input-select">
+                    <option value="0">0000</option>
+                    <option value="5">0101</option>
+                    <option value="10">1010</option>
+                    <option value="15">1111</option>
+                </select>
+                <br><br>
+                <label><input type="checkbox" id="reg-load-enable"> Load Enable (Ld)</label>
+            </div>
+
+            <div class="controls">
+                <button class="action-btn" onclick="clockRegister()">觸發時脈 (Clock Edge)</button>
+                <button class="action-btn secondary" onclick="clearRegister()">非同步清除 (ClrN)</button>
+            </div>
+            <p style="text-align: center; font-size: 0.9rem; color: #666;">注意：必須勾選 "Load Enable" 並按下 "觸發時脈"，資料才會載入。</p>
+        </div>
+    </div>
+
+    <div id="shift" class="section">
+        <div class="card">
+            <h2>移位暫存器 (Shift Registers)</h2>
+            <div class="info-box">
+                <p>移位暫存器可以在施加移位訊號時，將儲存的資料向左或向右移動 [cite: 274]。</p>
+                <ul>
+                    <li><strong>串列輸入 (Serial In)：</strong> 資料一次一位進入第一個正反器 [cite: 316]。</li>
+                    <li><strong>通用移位暫存器 (如 74178/Figure 12-10)：</strong> 具備平行載入 (Parallel Load) 與移位 (Shift) 功能，通常由 MUX 和 D Flip-Flop 組成 [cite: 393]。</li>
+                </ul>
+            </div>
+
+            <h3>4-bit 通用移位暫存器模擬</h3>
+            <div class="bit-container" id="shift-bits"></div>
+            
+            <div class="controls" style="margin-bottom: 15px;">
+                <label>串列輸入 (Serial Input): <input type="checkbox" id="serial-in-val"> (1 or 0)</label>
+            </div>
+
+            <div class="controls">
+                <button class="action-btn" onclick="shiftOp('shiftRight')">右移 (Shift Right)</button>
+                <button class="action-btn" onclick="shiftOp('load')">平行載入 (1011)</button>
+                <button class="action-btn secondary" onclick="shiftOp('hold')">保持 (Hold)</button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h4>強森計數器 (Johnson Counter) 概念 </h4>
+                <p>將最後一個正反器的反向輸出 ($Q'$) 接回第一個正反器的輸入，會產生 "Twisted Ring" 效果。</p>
+                <button class="action-btn" onclick="demoJohnson()">演示強森計數器下一步</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="counters" class="section">
+        <div class="card">
+            <h2>同步二進位計數器 (Synchronous Binary Counters)</h2>
+            <div class="info-box">
+                <p>計數器依據時脈脈衝按固定序列改變狀態 [cite: 2]。同步計數器所有正反器同時由時脈觸發 [cite: 524]。</p>
+                <p><strong>Up-Down Counter (上/下數計數器)：</strong></p>
+                <ul>
+                    <li>當 U=1 時，計數順序為 000 -> 001 -> ... -> 111 -> 000 。</li>
+                    <li>使用 T Flip-Flop 設計時，若要翻轉狀態，輸入 T 必須為 1 [cite: 535]。</li>
+                </ul>
+            </div>
+
+            <h3>3-bit 上/下數計數器模擬</h3>
+            <div class="bit-container" id="counter-bits"></div>
+            <div style="text-align: center; font-size: 1.2rem; margin: 10px;">
+                數值 (Decimal): <span id="counter-val">0</span>
+            </div>
+
+            <div class="controls">
+                <label><input type="radio" name="count-dir" value="up" checked> 向上數 (Up)</label>
+                <label><input type="radio" name="count-dir" value="down"> 向下數 (Down)</label>
+            </div>
+
+            <div class="controls">
+                <button class="action-btn" onclick="updateCounter()">觸發時脈 (Clock)</button>
+                <button class="action-btn secondary" onclick="resetCounter()">重置 (Reset)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="design" class="section">
+        <div class="card">
+            <h2>計數器設計與正反器激勵表</h2>
+            <div class="info-box">
+                <p>設計任意序列計數器的步驟 [cite: 1061]：</p>
+                <ol>
+                    <li>建立狀態轉換表 (Transition Table)。</li>
+                    <li>繪製 Next-State Maps (Karnaugh Maps)。</li>
+                    <li>根據正反器類型 (D, T, SR, JK) 轉換為輸入圖 (Input Map)。</li>
+                    <li>推導邏輯方程式。</li>
+                </ol>
+            </div>
+
+            <h3>正反器輸入需求查詢表 (Table 12-9) </h3>
+            <p>選擇當前狀態 ($Q$) 與 下一個狀態 ($Q^+$) 來查看各類正反器所需的輸入：</p>
+            
+            <div style="display: flex; justify-content: center; gap: 20px; align-items: center; margin: 20px;">
+                <select id="current-q" onchange="updateExcitation()" style="padding: 10px;">
+                    <option value="0">當前狀態 Q = 0</option>
+                    <option value="1">當前狀態 Q = 1</option>
+                </select>
+                <span>&rarr;</span>
+                <select id="next-q" onchange="updateExcitation()" style="padding: 10px;">
+                    <option value="0">下一狀態 Q+ = 0</option>
+                    <option value="1">下一狀態 Q+ = 1</option>
+                </select>
+            </div>
+
+            <table id="excitation-table">
+                <thead>
+                    <tr>
+                        <th>正反器類型</th>
+                        <th>所需輸入</th>
+                        <th>說明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>D Flip-Flop</strong></td>
+                        <td id="res-d">-</td>
+                        <td>$D = Q^+$ [cite: 625]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T Flip-Flop</strong></td>
+                        <td id="res-t">-</td>
+                        <td>當狀態改變時 T=1 [cite: 956]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>S-R Flip-Flop</strong></td>
+                        <td id="res-sr">-</td>
+                        <td>S=1 置位, R=1 重置 [cite: 1145]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>J-K Flip-Flop</strong></td>
+                        <td id="res-jk">-</td>
+                        <td>類似 SR，但允許 J=K=1 (翻轉) [cite: 1208]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- 共用顯示函式 ---
+    function renderBits(elementId, value, bitCount, labels) {
+        const container = document.getElementById(elementId);
+        container.innerHTML = '';
+        for (let i = bitCount - 1; i >= 0; i--) {
+            const bitVal = (value >> i) & 1;
+            const bitDiv = document.createElement('div');
+            bitDiv.className = `bit ${bitVal ? 'active' : ''}`;
+            bitDiv.innerHTML = `
+                ${bitVal}
+                <div class="bit-label">${labels[i]}</div>
+            `;
+            container.appendChild(bitDiv);
+        }
+    }
+
+    // --- Tab Navigation ---
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // --- Section 1: Register Logic ---
+    let regValue = 0;
+    
+    function clockRegister() {
+        const loadEnable = document.getElementById('reg-load-enable').checked;
+        const inputVal = parseInt(document.getElementById('reg-input-select').value);
+        
+        // 邏輯: 只有當 Load = 1 時，Clock Edge 才會載入資料 [cite: 81]
+        if (loadEnable) {
+            regValue = inputVal;
+        }
+        // 如果 Load = 0，保持原值 [cite: 13]
+        renderBits('reg-bits', regValue, 4, ['Q0', 'Q1', 'Q2', 'Q3']);
+    }
+
+    function clearRegister() {
+        // 非同步清除直接歸零 [cite: 85]
+        regValue = 0;
+        renderBits('reg-bits', regValue, 4, ['Q0', 'Q1', 'Q2', 'Q3']);
+    }
+    
+    // Init Register
+    renderBits('reg-bits', 0, 4, ['Q0', 'Q1', 'Q2', 'Q3']);
+
+    // --- Section 2: Shift Register Logic ---
+    let shiftRegValue = 0; // 4 bits
+
+    function shiftOp(operation) {
+        const serialIn = document.getElementById('serial-in-val').checked ? 1 : 0;
+        
+        // 模擬 Figure 12-10 的行為
+        if (operation === 'load') {
+            shiftRegValue = 11; // binary 1011 as example
+        } else if (operation === 'shiftRight') {
+            // Shift Right: SI 進入 MSB, LSB 移出
+            // Q3+ = SI, Q2+ = Q3 ... [cite: 426-428]
+            shiftRegValue = (shiftRegValue >> 1) | (serialIn << 3);
+        }
+        // hold 不做任何事 [cite: 391]
+        
+        renderBits('shift-bits', shiftRegValue, 4, ['Q0', 'Q1', 'Q2', 'Q3']);
+    }
+
+    function demoJohnson() {
+        // 強森計數器：最後一位反向後餵給第一位 
+        // 假設是 4-bit
+        let lastBit = (shiftRegValue >> 0) & 1; // Q0
+        let nextBit = lastBit === 0 ? 1 : 0; // Inverted feedback
+        shiftRegValue = (shiftRegValue >> 1) | (nextBit << 3);
+        renderBits('shift-bits', shiftRegValue, 4, ['Q0', 'Q1', 'Q2', 'Q3']);
+    }
+
+    // Init Shift Register
+    renderBits('shift-bits', 0, 4, ['Q0', 'Q1', 'Q2', 'Q3']);
+
+    // --- Section 3: Counter Logic ---
+    let counterVal = 0;
+
+    function updateCounter() {
+        const isUp = document.querySelector('input[name="count-dir"]:checked').value === 'up';
+        
+        if (isUp) {
+            counterVal = (counterVal + 1) % 8; // 3-bit, modulo 8
+        } else {
+            counterVal = (counterVal - 1);
+            if (counterVal < 0) counterVal = 7;
+        }
+        
+        renderBits('counter-bits', counterVal, 3, ['A', 'B', 'C']); // Using labels from text [cite: 530]
+        document.getElementById('counter-val').textContent = counterVal;
+    }
+
+    function resetCounter() {
+        counterVal = 0;
+        renderBits('counter-bits', counterVal, 3, ['A', 'B', 'C']);
+        document.getElementById('counter-val').textContent = counterVal;
+    }
+
+    // Init Counter
+    renderBits('counter-bits', 0, 3, ['A', 'B', 'C']);
+
+    // --- Section 4: Excitation Logic ---
+    function updateExcitation() {
+        const Q = document.getElementById('current-q').value;
+        const Q_next = document.getElementById('next-q').value;
+        
+        let d, t, sr, jk;
+
+        // Logic based on Table 12-9 
+        if (Q == '0' && Q_next == '0') {
+            d = '0'; t = '0'; sr = 'S=0, R=X'; jk = 'J=0, K=X';
+        } else if (Q == '0' && Q_next == '1') {
+            d = '1'; t = '1'; sr = 'S=1, R=0'; jk = 'J=1, K=X';
+        } else if (Q == '1' && Q_next == '0') {
+            d = '0'; t = '1'; sr = 'S=0, R=1'; jk = 'J=X, K=1';
+        } else if (Q == '1' && Q_next == '1') {
+            d = '1'; t = '0'; sr = 'S=X, R=0'; jk = 'J=X, K=0';
+        }
+
+        document.getElementById('res-d').innerText = `D = ${d}`;
+        document.getElementById('res-t').innerText = `T = ${t}`;
+        document.getElementById('res-sr').innerText = sr;
+        document.getElementById('res-jk').innerText = jk;
+    }
+
+    // Init Excitation Table
+    updateExcitation();
+
+</script>
+
+</body>
+</html>
