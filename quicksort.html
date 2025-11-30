@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>快速排序單步視覺化 - 最終修復版 (Program 7.11)</title>
+    <title>C 語言 Quick Sort 逐步視覺化 (Hoare 分區 - Program 7.11)</title>
     <style>
         /* 全局設置 */
         body { 
@@ -15,16 +15,16 @@
         h1 { color: #1a1a1a; margin-bottom: 20px; text-align: center; }
         .main-container { 
             display: flex; 
-            gap: 30px; /* 增加間隔 */
+            gap: 30px; 
             width: 100%; 
             max-width: 1300px; 
             margin: 0 auto;
         }
         
-        /* 左側：程式碼面板 (已修復溢出問題) */
+        /* 左側：C 語言程式碼面板 */
         .code-panel { 
             flex: 1; 
-            min-width: 650px;
+            min-width: 550px;
             background-color: #2b2b2b; 
             color: #f8f8f2; 
             padding: 15px; 
@@ -33,8 +33,8 @@
             font-size: 14px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             height: fit-content;
-            overflow-x: auto; /* 允許水平滾動以確保程式碼完整顯示 */
-            white-space: nowrap; /* 防止程式碼行自動換行 */
+            overflow-x: auto; 
+            white-space: nowrap; 
         }
         .code-line { padding: 2px 5px; transition: background-color 0.1s; }
         .highlight { background-color: #50E3C2; color: #2b2b2b; border-radius: 3px; } 
@@ -94,28 +94,33 @@
 </head>
 <body>
 
-    <h1>快速排序單步視覺化 (Hoare 分區 - Program 7.11)</h1>
+    <h1>C 語言快速排序單步視覺化 (Program 7.11)</h1>
 
     <div class="main-container">
         
         <div class="code-panel">
-            <div id="code-0" class="code-line">// 程式碼：Hoare 分區 (Program 7.11)</div>
-            <div id="code-1" class="code-line">1: function quickSort(list, left, right):</div>
-            <div id="code-2" class="code-line">2:   if (left < right):</div>
-            <div id="code-3" class="code-line">3:     pivotIndex = hoarePartition(list, left, right)</div>
-            <div id="code-4" class="code-line">4:     quickSort(list, left, pivotIndex - 1) // 遞迴左側</div>
-            <div id="code-5" class="code-line">5:     quickSort(list, pivotIndex + 1, right) // 遞迴右側</div>
-            <div id="code-6" class="code-line"></div>
-            <div id="code-7" class="code-line">7: function hoarePartition(list, left, right):</div>
-            <div id="code-8" class="code-line">8:   i = left, j = right + 1, pivot = list[left] // 初始化 i, j, 樞紐</div>
-            <div id="code-9" class="code-line">9:   do:</div>
-            <div id="code-10" class="code-line">10:    i = i + 1; while (list[i] < pivot) { i = i + 1 } // 找第一個 >= pivot</div>
-            <div id="code-11" class="code-line">11:    j = j - 1; while (list[j] > pivot) { j = j - 1 } // 找第一個 <= pivot</div>
-            <div id="code-12" class="code-line">12:    if (i < j):</div>
-            <div id="code-13" class="code-line">13:      SWAP(list[i], list[j]) // 交換 i 和 j 指向的元素</div>
-            <div id="code-14" class="code-line">14:  while (i < j) // 檢查是否錯過</div>
-            <div id="code-15" class="code-line">15:  SWAP(list[left], list[j]) // 樞紐與 j 交換，完成分區</div>
-            <div id="code-16" class="code-line">16:  return j</div>
+            <div id="code-0" class="code-line">// Program 7.11: quicksort C implementation</div>
+            <div id="code-1" class="code-line">void quicksort(int list[], int left, int right) {</div>
+            <div id="code-2" class="code-line">  int pivot, i, j;</div>
+            <div id="code-3" class="code-line">  if (left < right) {</div>
+            <div id="code-4" class="code-line">    i = left; </div>
+            <div id="code-5" class="code-line">    j = right + 1;</div>
+            <div id="code-6" class="code-line">    pivot = list[left]; // 選擇最左邊為樞紐</div>
+            <div id="code-7" class="code-line">    do {</div>
+            <div id="code-8" class="code-line">      do {</div>
+            <div id="code-9" class="code-line">        i++;</div>
+            <div id="code-10" class="code-line">      } while (list[i] < pivot); // 找第一個 >= pivot</div>
+            <div id="code-11" class="code-line">      do {</div>
+            <div id="code-12" class="code-line">        j--;</div>
+            <div id="code-13" class="code-line">      } while (list[j] > pivot); // 找第一個 <= pivot</div>
+            <div id="code-14" class="code-line">      if (i < j)</div>
+            <div id="code-15" class="code-line">        SWAP(list[i], list[j]); // 交換</div>
+            <div id="code-16" class="code-line">    } while (i < j);</div>
+            <div id="code-17" class="code-line">    SWAP(list[left], list[j]); // 樞紐歸位</div>
+            <div id="code-18" class="code-line">    quicksort(list, left, j - 1); // 遞迴左側</div>
+            <div id="code-19" class="code-line">    quicksort(list, j + 1, right); // 遞迴右側</div>
+            <div id="code-20" class="code-line">  }</div>
+            <div id="code-21" class="code-line">}</div>
         </div>
 
         <div class="visual-panel">
@@ -130,7 +135,7 @@
             </div>
             
             <div class="action-message" id="actionMessage">
-                狀態：請先點擊「載入範例」或「重置」來準備陣列。
+                狀態：請先點擊「載入範例」來準備陣列。
             </div>
         </div>
 
@@ -246,7 +251,7 @@
             clearVisuals();
             document.getElementById('nextStepBtn').disabled = true;
             document.getElementById('autoRunBtn').disabled = true;
-            updateActionMessage('狀態：陣列已重置。請點擊「載入範例」或「重置」準備排序。');
+            updateActionMessage('狀態：陣列已重置。請點擊「載入範例」來準備排序。');
             highlightCode(null);
         }
 
@@ -283,56 +288,51 @@
             bar2.setAttribute('value', array[index2]);
         }
         
-        // --- Hoare 分區生成器 (修正遞迴和指標邏輯) ---
+        // --- Quick Sort 核心生成器 ---
         function* hoarePartitionGenerator(list, left, right) {
             let i = left;
             let j = right + 1;
             let pivot = list[left]; 
 
             // 1. 設置初始狀態
-            yield { type: 'SETUP_PARTITION', left: left, right: right, code: [7, 8], msg: `對 [R${left}..R${right}] 分區。樞紐 (Pivot) 為 R${left} (${pivot})。初始化 i=${i}, j=${j-1}。`, pivot_idx: left, i: i, j: j - 1 };
+            yield { type: 'SETUP_PARTITION', left: left, right: right, code: [4, 5, 6], msg: `Pivot = list[left] (${pivot})。初始化 i=${i}, j=${j-1}。`, pivot_idx: left, i: i, j: j - 1 };
 
             while (true) {
                 // 2. 主循環開始
-                yield { type: 'HIGHLIGHT', code: [9], msg: `進入 do-while 迴圈，檢查 i 和 j 是否錯過。`};
+                yield { type: 'HIGHLIGHT', code: [7], msg: `進入 do-while 迴圈，檢查是否錯過 (i < j)。`};
 
-                // 3. 尋找 i: i = i + 1 (Line 10 - Start)
+                // 3. 尋找 i: i = i + 1; while (list[i] < pivot) (Line 8-10)
                 i++;
-                yield { type: 'MOVE_I_INIT', i: i, j: j - 1, code: [10], msg: `i = i + 1。現在 i = ${i}。尋找第一個 >= 樞紐 (${pivot}) 的元素。` };
+                yield { type: 'MOVE_I_INIT', i: i, j: j - 1, code: [8, 9], msg: `i++。現在 i = ${i}。尋找第一個 >= 樞紐 (${pivot}) 的元素。` };
 
-                // 4. 尋找 i: while (list[i] < pivot) (Line 10 - Loop)
                 while (i <= right && list[i] < pivot) {
                     i++;
-                    yield { type: 'MOVE_I', i: i, j: j - 1, code: [10], msg: `R${i-1} (${list[i-1]}) < Pivot。i = i + 1。現在 i = ${i}。` };
+                    yield { type: 'MOVE_I', i: i, j: j - 1, code: [10], msg: `list[i-1] (${list[i-1]}) < Pivot。i++。現在 i = ${i}。` };
                 }
-                yield { type: 'STOP_I', i: i, j: j - 1, code: [10], msg: `R${i} (${list[i] || 'N/A'}) >= Pivot (或 i 超出範圍)。i 停止。` };
+                yield { type: 'STOP_I', i: i, j: j - 1, code: [10], msg: `list[i] (${list[i] || 'N/A'}) >= Pivot (或 i 超出範圍)。i 停止。` };
                 
-                // 5. 尋找 j: j = j - 1 (Line 11 - Start)
+                // 4. 尋找 j: j = j - 1; while (list[j] > pivot) (Line 11-13)
                 j--;
-                yield { type: 'MOVE_J_INIT', i: i, j: j, code: [11], msg: `j = j - 1。現在 j = ${j}。尋找第一個 <= 樞紐 (${pivot}) 的元素。` };
+                yield { type: 'MOVE_J_INIT', i: i, j: j, code: [11, 12], msg: `j--。現在 j = ${j}。尋找第一個 <= 樞紐 (${pivot}) 的元素。` };
 
-                // 6. 尋找 j: while (list[j] > pivot) (Line 11 - Loop)
                 while (j >= left && list[j] > pivot) {
                     j--;
-                    yield { type: 'MOVE_J', i: i, j: j, code: [11], msg: `R${j+1} (${list[j+1]}) > Pivot。j = j - 1。現在 j = ${j}。` };
+                    yield { type: 'MOVE_J', i: i, j: j, code: [13], msg: `list[j+1] (${list[j+1]}) > Pivot。j--。現在 j = ${j}。` };
                 }
-                yield { type: 'STOP_J', i: i, j: j, code: [11], msg: `R${j} (${list[j]}) <= Pivot (或 j 超出範圍)。j 停止。` };
+                yield { type: 'STOP_J', i: i, j: j, code: [13], msg: `list[j] (${list[j]}) <= Pivot (或 j 超出範圍)。j 停止。` };
 
-                // 7. 判斷是否錯過
+                // 5. 判斷是否錯過
                 if (i < j) {
-                    yield { type: 'SWAP_CHECK', i: i, j: j, code: [12], msg: `i < j (${i} < ${j}) 成立。準備交換 R${i} 和 R${j}。` };
-                    yield { type: 'SWAP', i: i, j: j, code: [13], msg: `執行 SWAP(list[i], list[j])。交換 ${list[i]} 和 ${list[j]}。` };
+                    yield { type: 'SWAP_CHECK', i: i, j: j, code: [14], msg: `if (i < j) 成立。準備交換 R${i} 和 R${j}。` };
+                    yield { type: 'SWAP', i: i, j: j, code: [15], msg: `執行 SWAP(list[i], list[j])。交換 ${list[i]} 和 ${list[j]}。` };
                 } else {
-                    yield { type: 'FINAL_CHECK', i: i, j: j, code: [14], msg: `i >= j (${i} >= ${j})。do-while 迴圈結束。` };
+                    yield { type: 'FINAL_CHECK', i: i, j: j, code: [16], msg: `do-while (i < j) 迴圈結束。i >= j。` };
                     break; 
                 }
             }
 
-            // 8. 樞紐歸位
-            yield { type: 'FINAL_SWAP', left: left, j: j, code: [15], msg: `將樞紐 (${pivot}) 與 R${j} (${list[j]}) 交換。分區完成。` };
-            
-            // 9. 返回
-            yield { type: 'RETURN', j: j, code: [16], msg: `hoarePartition 返回樞紐最終位置 R${j}。`};
+            // 6. 樞紐歸位
+            yield { type: 'FINAL_SWAP', left: left, j: j, code: [17], msg: `執行 SWAP(list[left], list[j])。樞紐 (${pivot}) 歸位到 R${j}。` };
             
             return j;
         }
@@ -342,29 +342,29 @@
             if (left > right) return;
 
             if (left === right) {
-                executionQueue.push({ type: 'MARK_DONE_SINGLE', index: left, code: [2], msg: `R${left} 是單一元素，視為已排序。`});
+                executionQueue.push({ type: 'MARK_DONE_SINGLE', index: left, code: [3], msg: `R${left} 是單一元素，if (left < right) 不成立，返回。`});
                 return;
             }
             
-            // 1. 遞迴呼叫視覺化
-            executionQueue.push({ type: 'CALL_PARTITION_START', left: left, right: right, code: [3], msg: `quickSort 呼叫 hoarePartition [R${left}..R${right}]。` });
+            // 1. 遞迴呼叫視覺化 (Line 3)
+            executionQueue.push({ type: 'CALL_PARTITION_START', left: left, right: right, code: [3], msg: `quickSort 檢查 if (left < right) 成立。` });
 
             // 2. 執行分區並獲取步驟
             const partitionIterator = hoarePartitionGenerator(list, left, right);
             let pivotIndex;
             for (const step of partitionIterator) {
                 executionQueue.push(step);
-                if (step.type === 'RETURN') {
+                if (step.type === 'RETURN_PARTITION') {
                     pivotIndex = step.j;
                 }
             }
             
-            // 3. 遞迴左側
-            executionQueue.push({ type: 'CALL_RECURSION_LEFT', left: left, right: pivotIndex - 1, pivot_idx: pivotIndex, code: [4], msg: `遞迴左側：quickSort [R${left}..R${pivotIndex - 1}]。` });
+            // 3. 遞迴左側 (Line 18)
+            executionQueue.push({ type: 'CALL_RECURSION_LEFT', left: left, right: pivotIndex - 1, pivot_idx: pivotIndex, code: [18], msg: `遞迴左側：quicksort(list, ${left}, ${pivotIndex - 1})。` });
             quickSortGenerator(list, left, pivotIndex - 1);
 
-            // 4. 遞迴右側
-            executionQueue.push({ type: 'CALL_RECURSION_RIGHT', left: pivotIndex + 1, right: right, pivot_idx: pivotIndex, code: [5], msg: `遞迴右側：quickSort [R${pivotIndex + 1}..R${right}]。` });
+            // 4. 遞迴右側 (Line 19)
+            executionQueue.push({ type: 'CALL_RECURSION_RIGHT', left: pivotIndex + 1, right: right, pivot_idx: pivotIndex, code: [19], msg: `遞迴右側：quicksort(list, ${pivotIndex + 1}, ${right})。` });
             quickSortGenerator(list, pivotIndex + 1, right);
         }
 
@@ -433,7 +433,7 @@
                     document.getElementById(`bar-${step.left}`).classList.add('swapping');
                     document.getElementById(`bar-${step.j}`).classList.add('swapping');
                     break;
-                case 'RETURN':
+                case 'RETURN_PARTITION':
                     document.getElementById(`bar-${step.j}`).classList.add('sorted');
                     break;
                 case 'CALL_PARTITION_START':
