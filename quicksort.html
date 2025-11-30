@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>快速排序單步視覺化 - 最終修復版 (Program 7.11)</title>
+    <style>
+        /* 全局設置 */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f8f8ff; 
+            color: #333; 
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #1a1a1a; margin-bottom: 20px; text-align: center; }
+        .main-container { 
+            display: flex; 
+            gap: 30px; /* 增加間隔 */
+            width: 100%; 
+            max-width: 1300px; 
+            margin: 0 auto;
+        }
+        
+        /* 左側：程式碼面板 (已修復溢出問題) */
+        .code-panel { 
+            flex: 1; 
+            min-width: 650px;
+            background-color: #2b2b2b; 
+            color: #f8f8f2; 
+            padding: 15px; 
+            border-radius: 8px; 
+            font-family: 'Courier New', monospace; 
+            font-size: 14px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            height: fit-content;
+            overflow-x: auto; /* 允許水平滾動以確保程式碼完整顯示 */
+            white-space: nowrap; /* 防止程式碼行自動換行 */
+        }
+        .code-line { padding: 2px 5px; transition: background-color 0.1s; }
+        .highlight { background-color: #50E3C2; color: #2b2b2b; border-radius: 3px; } 
+
+        /* 右側：視覺化面板 */
+        .visual-panel { 
+            flex: 2; 
+            min-width: 700px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        /* 控制區 */
+        .controls { 
+            margin-bottom: 20px; 
+            background-color: #fff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            width: 100%;
+        }
+
+        /* 陣列視覺化區 */
+        .array-container { 
+            display: flex; 
+            min-height: 200px; 
+            align-items: flex-end; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            background-color: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            width: 100%; 
+            justify-content: center; 
+        }
+        .bar-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 40px; margin: 0 1px; }
+        .bar { width: 30px; background-color: #4A90E2; transition: height 0.3s, background-color 0.3s; margin-top: auto; }
+        .bar-label { font-size: 10px; text-align: center; color: #333; margin-top: 5px; }
+        .index-label { font-size: 10px; color: #777; margin-bottom: 2px; }
+        .indicator { position: absolute; font-weight: bold; font-size: 14px; text-align: center; width: 100%; top: -20px; transition: top 0.3s; }
+        
+        /* 視覺化顏色 */
+        .pivot { background-color: #D0021B !important; } 
+        .comparing { background-color: #F5A623 !important; } 
+        .swapping { background-color: #50E3C2 !important; } 
+        .sorted { background-color: #008000 !important; } 
+        .i-pointer { color: #007bff; top: -35px; } 
+        .j-pointer { color: #FF00FF; top: -35px; } 
+
+        .action-message { margin-top: 10px; font-weight: bold; color: #34495e; min-height: 40px; width: 100%; padding: 0 10px; }
+        .sub-array-indicator { position: absolute; bottom: 0; background-color: rgba(0, 123, 255, 0.1); border: 1px dashed #007bff; height: calc(100% - 20px); z-index: -1; }
+    </style>
+</head>
+<body>
+
+    <h1>快速排序單步視覺化 (Hoare 分區 - Program 7.11)</h1>
+
+    <div class="main-container">
+        
+        <div class="code-panel">
+            <div id="code-0" class="code-line">// 程式碼：Hoare 分區 (Program 7.11)</div>
+            <div id="code-1" class="code-line">1: function quickSort(list, left, right):</div>
+            <div id="code-2" class="code-line">2:   if (left < right):</div>
+            <div id="code-3" class="code-line">3:     pivotIndex = hoarePartition(list, left, right)</div>
+            <div id="code-4" class="code-line">4:     quickSort(list, left, pivotIndex - 1) // 遞迴左側</div>
+            <div id="code-5" class="code-line">5:     quickSort(list, pivotIndex + 1, right) // 遞迴右側</div>
+            <div id="code-6" class="code-line"></div>
+            <div id="code-7" class="code-line">7: function hoarePartition(list, left, right):</div>
+            <div id="code-8" class="code-line">8:   i = left, j = right + 1, pivot = list[left] // 初始化 i, j, 樞紐</div>
+            <div id="code-9" class="code-line">9:   do:</div>
+            <div id="code-10" class="code-line">10:    i = i + 1; while (list[i] < pivot) { i = i + 1 } // 找第一個 >= pivot</div>
+            <div id="code-11" class="code-line">11:    j = j - 1; while (list[j] > pivot) { j = j - 1 } // 找第一個 <= pivot</div>
+            <div id="code-12" class="code-line">12:    if (i < j):</div>
+            <div id="code-13" class="code-line">13:      SWAP(list[i], list[j]) // 交換 i 和 j 指向的元素</div>
+            <div id="code-14" class="code-line">14:  while (i < j) // 檢查是否錯過</div>
+            <div id="code-15" class="code-line">15:  SWAP(list[left], list[j]) // 樞紐與 j 交換，完成分區</div>
+            <div id="code-16" class="code-line">16:  return j</div>
+        </div>
+
+        <div class="visual-panel">
+            <div class="controls">
+                <button onclick="loadExample()">載入範例 (26 5 37 1 ...)</button>
+                <button onclick="resetArray()">重置</button>
+                <button id="nextStepBtn" onclick="nextStep()" disabled>下一步 (Step)</button>
+                <button id="autoRunBtn" onclick="autoRun()" disabled>自動執行</button>
+            </div>
+
+            <div class="array-container" id="arrayContainer">
+            </div>
+            
+            <div class="action-message" id="actionMessage">
+                狀態：請先點擊「載入範例」或「重置」來準備陣列。
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let array = [];
+        const MAX_VALUE = 200;
+        let executionQueue = []; 
+        let stepIndex = 0;
+        let isRunning = false;
+        let isAutoRun = false;
+        let autoRunDelay = 300; 
+        
+        // --- 視覺化控制函數 ---
+        function highlightCode(lineNumbers) {
+            document.querySelectorAll('.code-line').forEach(line => line.classList.remove('highlight'));
+            if (lineNumbers) {
+                lineNumbers.forEach(num => {
+                    const line = document.getElementById(`code-${num}`);
+                    if (line) line.classList.add('highlight');
+                });
+            }
+        }
+
+        function updateActionMessage(message) {
+            document.getElementById('actionMessage').innerHTML = message;
+        }
+
+        function setIndicator(index, type, text) {
+            if (index < 0 || index >= array.length) return;
+            const barWrapper = document.getElementById(`bar-${index}`).closest('.bar-wrapper');
+            let indicator = barWrapper.querySelector(`.${type}-pointer`);
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = `indicator ${type}-pointer`;
+                barWrapper.appendChild(indicator);
+            }
+            indicator.textContent = text;
+        }
+
+        function removeIndicator(index, type) {
+            if (index < 0 || index >= array.length) return;
+            const barWrapper = document.getElementById(`bar-${index}`).closest('.bar-wrapper');
+            const indicator = barWrapper.querySelector(`.${type}-pointer`);
+            if (indicator) indicator.remove();
+        }
+
+        // --- 繪製與初始設定 ---
+        function drawArray(low = -1, high = -1) {
+            const container = document.getElementById('arrayContainer');
+            container.innerHTML = '';
+            const maxVal = Math.max(...array);
+
+            array.forEach((val, index) => {
+                const height = (val / maxVal) * 150 + 20; 
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bar-wrapper';
+
+                const indexLabel = document.createElement('div');
+                indexLabel.className = 'index-label';
+                indexLabel.textContent = `R${index}`;
+
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${height}px`;
+                bar.id = `bar-${index}`;
+                bar.setAttribute('value', val);
+
+                const label = document.createElement('div');
+                label.className = 'bar-label';
+                label.textContent = val;
+
+                wrapper.appendChild(indexLabel);
+                wrapper.appendChild(bar);
+                wrapper.appendChild(label);
+                container.appendChild(wrapper);
+            });
+            
+            // 繪製子陣列範圍指示器
+            document.querySelectorAll('.sub-array-indicator').forEach(ind => ind.remove());
+            if (low !== -1 && high !== -1 && low <= high) {
+                const firstBarWrapper = document.getElementById(`bar-${low}`).closest('.bar-wrapper');
+                const lastBarWrapper = document.getElementById(`bar-${high}`).closest('.bar-wrapper');
+                if (firstBarWrapper && lastBarWrapper) {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'sub-array-indicator';
+                    indicator.style.left = `${firstBarWrapper.offsetLeft}px`;
+                    indicator.style.width = `${lastBarWrapper.offsetLeft - firstBarWrapper.offsetLeft + lastBarWrapper.offsetWidth}px`;
+                    container.appendChild(indicator);
+                }
+            }
+        }
+
+        function clearVisuals() {
+            document.querySelectorAll('.indicator').forEach(ind => ind.remove());
+            document.querySelectorAll('.bar').forEach(bar => {
+                if (!bar.classList.contains('sorted')) {
+                    bar.style.backgroundColor = '#4A90E2';
+                    bar.classList.remove('pivot', 'comparing', 'swapping');
+                }
+            });
+            document.querySelectorAll('.sub-array-indicator').forEach(ind => ind.remove());
+        }
+
+        function resetArray() {
+            if (isRunning) return;
+            const arrSize = 10;
+            array = Array.from({length: arrSize}, () => Math.floor(Math.random() * MAX_VALUE) + 10);
+            drawArray();
+            executionQueue = [];
+            stepIndex = 0;
+            clearVisuals();
+            document.getElementById('nextStepBtn').disabled = true;
+            document.getElementById('autoRunBtn').disabled = true;
+            updateActionMessage('狀態：陣列已重置。請點擊「載入範例」或「重置」準備排序。');
+            highlightCode(null);
+        }
+
+        function loadExample() {
+            if (isRunning) return;
+            array = [26, 5, 37, 1, 61, 11, 59, 15, 48, 19]; 
+            drawArray(0, array.length - 1);
+            executionQueue = [];
+            stepIndex = 0;
+            clearVisuals();
+            document.getElementById('nextStepBtn').disabled = false;
+            document.getElementById('autoRunBtn').disabled = false;
+            updateActionMessage('狀態：已載入範例陣列。點擊「下一步」開始。');
+            quickSortGenerator(array, 0, array.length - 1); 
+            highlightCode([1]);
+        }
+        
+        // --- 視覺化交換函數 ---
+        function applySwapVisual(index1, index2) {
+            const bar1 = document.getElementById(`bar-${index1}`);
+            const bar2 = document.getElementById(`bar-${index2}`);
+            [array[index1], array[index2]] = [array[index2], array[index1]];
+
+            const height1 = bar1.style.height;
+            const height2 = bar2.style.height;
+            bar1.style.height = height2;
+            bar2.style.height = height1;
+
+            const label1 = bar1.nextElementSibling;
+            const label2 = bar2.nextElementSibling;
+            label1.textContent = array[index1];
+            label2.textContent = array[index2];
+            bar1.setAttribute('value', array[index1]);
+            bar2.setAttribute('value', array[index2]);
+        }
+        
+        // --- Hoare 分區生成器 (修正遞迴和指標邏輯) ---
+        function* hoarePartitionGenerator(list, left, right) {
+            let i = left;
+            let j = right + 1;
+            let pivot = list[left]; 
+
+            // 1. 設置初始狀態
+            yield { type: 'SETUP_PARTITION', left: left, right: right, code: [7, 8], msg: `對 [R${left}..R${right}] 分區。樞紐 (Pivot) 為 R${left} (${pivot})。初始化 i=${i}, j=${j-1}。`, pivot_idx: left, i: i, j: j - 1 };
+
+            while (true) {
+                // 2. 主循環開始
+                yield { type: 'HIGHLIGHT', code: [9], msg: `進入 do-while 迴圈，檢查 i 和 j 是否錯過。`};
+
+                // 3. 尋找 i: i = i + 1 (Line 10 - Start)
+                i++;
+                yield { type: 'MOVE_I_INIT', i: i, j: j - 1, code: [10], msg: `i = i + 1。現在 i = ${i}。尋找第一個 >= 樞紐 (${pivot}) 的元素。` };
+
+                // 4. 尋找 i: while (list[i] < pivot) (Line 10 - Loop)
+                while (i <= right && list[i] < pivot) {
+                    i++;
+                    yield { type: 'MOVE_I', i: i, j: j - 1, code: [10], msg: `R${i-1} (${list[i-1]}) < Pivot。i = i + 1。現在 i = ${i}。` };
+                }
+                yield { type: 'STOP_I', i: i, j: j - 1, code: [10], msg: `R${i} (${list[i] || 'N/A'}) >= Pivot (或 i 超出範圍)。i 停止。` };
+                
+                // 5. 尋找 j: j = j - 1 (Line 11 - Start)
+                j--;
+                yield { type: 'MOVE_J_INIT', i: i, j: j, code: [11], msg: `j = j - 1。現在 j = ${j}。尋找第一個 <= 樞紐 (${pivot}) 的元素。` };
+
+                // 6. 尋找 j: while (list[j] > pivot) (Line 11 - Loop)
+                while (j >= left && list[j] > pivot) {
+                    j--;
+                    yield { type: 'MOVE_J', i: i, j: j, code: [11], msg: `R${j+1} (${list[j+1]}) > Pivot。j = j - 1。現在 j = ${j}。` };
+                }
+                yield { type: 'STOP_J', i: i, j: j, code: [11], msg: `R${j} (${list[j]}) <= Pivot (或 j 超出範圍)。j 停止。` };
+
+                // 7. 判斷是否錯過
+                if (i < j) {
+                    yield { type: 'SWAP_CHECK', i: i, j: j, code: [12], msg: `i < j (${i} < ${j}) 成立。準備交換 R${i} 和 R${j}。` };
+                    yield { type: 'SWAP', i: i, j: j, code: [13], msg: `執行 SWAP(list[i], list[j])。交換 ${list[i]} 和 ${list[j]}。` };
+                } else {
+                    yield { type: 'FINAL_CHECK', i: i, j: j, code: [14], msg: `i >= j (${i} >= ${j})。do-while 迴圈結束。` };
+                    break; 
+                }
+            }
+
+            // 8. 樞紐歸位
+            yield { type: 'FINAL_SWAP', left: left, j: j, code: [15], msg: `將樞紐 (${pivot}) 與 R${j} (${list[j]}) 交換。分區完成。` };
+            
+            // 9. 返回
+            yield { type: 'RETURN', j: j, code: [16], msg: `hoarePartition 返回樞紐最終位置 R${j}。`};
+            
+            return j;
+        }
+
+        // --- 快速排序主生成器 (處理遞迴) ---
+        function quickSortGenerator(list, left, right) {
+            if (left > right) return;
+
+            if (left === right) {
+                executionQueue.push({ type: 'MARK_DONE_SINGLE', index: left, code: [2], msg: `R${left} 是單一元素，視為已排序。`});
+                return;
+            }
+            
+            // 1. 遞迴呼叫視覺化
+            executionQueue.push({ type: 'CALL_PARTITION_START', left: left, right: right, code: [3], msg: `quickSort 呼叫 hoarePartition [R${left}..R${right}]。` });
+
+            // 2. 執行分區並獲取步驟
+            const partitionIterator = hoarePartitionGenerator(list, left, right);
+            let pivotIndex;
+            for (const step of partitionIterator) {
+                executionQueue.push(step);
+                if (step.type === 'RETURN') {
+                    pivotIndex = step.j;
+                }
+            }
+            
+            // 3. 遞迴左側
+            executionQueue.push({ type: 'CALL_RECURSION_LEFT', left: left, right: pivotIndex - 1, pivot_idx: pivotIndex, code: [4], msg: `遞迴左側：quickSort [R${left}..R${pivotIndex - 1}]。` });
+            quickSortGenerator(list, left, pivotIndex - 1);
+
+            // 4. 遞迴右側
+            executionQueue.push({ type: 'CALL_RECURSION_RIGHT', left: pivotIndex + 1, right: right, pivot_idx: pivotIndex, code: [5], msg: `遞迴右側：quickSort [R${pivotIndex + 1}..R${right}]。` });
+            quickSortGenerator(list, pivotIndex + 1, right);
+        }
+
+        // --- 單步執行函數 ---
+        function nextStep() {
+            if (stepIndex >= executionQueue.length) {
+                document.getElementById('nextStepBtn').disabled = true;
+                document.getElementById('autoRunBtn').disabled = true;
+                updateActionMessage('🎉 **排序流程結束**！所有元素都已定位並排序完成。');
+                highlightCode(null);
+                return;
+            }
+            
+            const step = executionQueue[stepIndex];
+            
+            // 清除上次的視覺化效果 (除了已定位的 'sorted' 元素)
+            clearVisuals();
+            
+            // 應用操作
+            switch (step.type) {
+                case 'SETUP_PARTITION':
+                    drawArray(step.left, step.right);
+                    document.getElementById(`bar-${step.pivot_idx}`).classList.add('pivot');
+                    setIndicator(step.i, 'i', 'i');
+                    setIndicator(step.j, 'j', 'j');
+                    break;
+                case 'MOVE_I_INIT':
+                    document.getElementById(`bar-${step.i}`).classList.add('comparing');
+                    setIndicator(step.i, 'i', 'i');
+                    break;
+                case 'MOVE_I':
+                    document.getElementById(`bar-${step.i}`).classList.add('comparing');
+                    setIndicator(step.i, 'i', 'i');
+                    break;
+                case 'STOP_I':
+                    document.getElementById(`bar-${step.i}`).classList.add('pivot');
+                    setIndicator(step.i, 'i', 'i');
+                    break;
+                case 'MOVE_J_INIT':
+                    document.getElementById(`bar-${step.j}`).classList.add('comparing');
+                    setIndicator(step.j, 'j', 'j');
+                    break;
+                case 'MOVE_J':
+                    document.getElementById(`bar-${step.j}`).classList.add('comparing');
+                    setIndicator(step.j, 'j', 'j');
+                    break;
+                case 'STOP_J':
+                    document.getElementById(`bar-${step.j}`).classList.add('pivot');
+                    setIndicator(step.j, 'j', 'j');
+                    break;
+                case 'SWAP_CHECK':
+                    document.getElementById(`bar-${step.i}`).classList.add('comparing');
+                    document.getElementById(`bar-${step.j}`).classList.add('comparing');
+                    setIndicator(step.i, 'i', 'i');
+                    setIndicator(step.j, 'j', 'j');
+                    break;
+                case 'SWAP':
+                    applySwapVisual(step.i, step.j);
+                    document.getElementById(`bar-${step.i}`).classList.add('swapping');
+                    document.getElementById(`bar-${step.j}`).classList.add('swapping');
+                    setIndicator(step.i, 'i', 'i');
+                    setIndicator(step.j, 'j', 'j');
+                    break;
+                case 'FINAL_SWAP':
+                    applySwapVisual(step.left, step.j);
+                    document.getElementById(`bar-${step.left}`).classList.add('swapping');
+                    document.getElementById(`bar-${step.j}`).classList.add('swapping');
+                    break;
+                case 'RETURN':
+                    document.getElementById(`bar-${step.j}`).classList.add('sorted');
+                    break;
+                case 'CALL_PARTITION_START':
+                    drawArray(step.left, step.right);
+                    break;
+                case 'CALL_RECURSION_LEFT':
+                case 'CALL_RECURSION_RIGHT':
+                    document.getElementById(`bar-${step.pivot_idx}`).classList.add('sorted');
+                    drawArray(step.left, step.right);
+                    break;
+                case 'MARK_DONE_SINGLE':
+                    document.getElementById(`bar-${step.index}`).classList.add('sorted');
+                    break;
+            }
+
+            highlightCode(step.code);
+            updateActionMessage(step.msg);
+            stepIndex++;
+            
+            if (isAutoRun) {
+                setTimeout(nextStep, autoRunDelay);
+            }
+        }
+
+        function autoRun() {
+            isAutoRun = !isAutoRun;
+            const btn = document.getElementById('autoRunBtn');
+            const nextBtn = document.getElementById('nextStepBtn');
+            
+            if (isAutoRun) {
+                btn.textContent = '暫停';
+                nextBtn.disabled = true;
+                nextStep(); 
+            } else {
+                btn.textContent = '自動執行';
+                nextBtn.disabled = false;
+            }
+        }
+
+        // 頁面載入時先初始化
+        resetArray();
+    </script>
+
+</body>
+</html>
