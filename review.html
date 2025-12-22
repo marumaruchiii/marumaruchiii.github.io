@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資料結構複選題複習 (25取10)</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #c0392b;
+            --bg: #f4f7f6;
+        }
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .stats {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .question-card {
+            display: none;
+        }
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        .question-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        .tag {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0277bd;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+        .option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .option:hover {
+            border-color: var(--accent);
+            background: #fbfbfb;
+        }
+        .option.selected {
+            border-color: var(--accent);
+            background: #e3f2fd;
+        }
+        /* 結果樣式 */
+        .option.correct-answer {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+        .option.wrong-selection {
+            border-color: var(--error);
+            background: #ffebee;
+        }
+        .option.missed {
+            border-color: var(--success);
+            border-style: dashed;
+            background: #f1f8e9;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* 結算畫面 */
+        .result-screen {
+            display: none;
+            text-align: center;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px auto;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>資料結構 隨機複習</h1>
+    <p class="stats">題庫總數：25題 | 本次測驗：10題 (複選全對才得分)</p>
+    
+    <div id="quiz-area">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        
+        <div id="question-container">
+            </div>
+
+        <div id="feedback-area" class="feedback"></div>
+
+        <div class="controls">
+            <span id="q-counter">Question 1 / 10</span>
+            <button id="submit-btn" class="btn" onclick="submitAnswer()">送出答案</button>
+            <button id="next-btn" class="btn" onclick="nextQuestion()" style="display:none;">下一題</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="result-screen">
+        <h2>測驗結束</h2>
+        <div class="score-circle" id="final-score">0</div>
+        <p id="score-text"></p>
+        <button class="btn" onclick="initQuiz()">重新開始 (隨機抽題)</button>
+    </div>
+</div>
+
+<script>
+// 題庫資料 (已去重並標準化)
+const allQuestions = [
+    {
+        q: "Linked Queue 的描述哪些是正確的?",
+        options: [
+            "新元素加在 front",
+            "刪除元素從 front",
+            "新元素加在 rear",
+            "rear 的 link 通常為 NULL"
+        ],
+        ans: ["刪除元素從 front", "新元素加在 rear", "rear 的 link 通常為 NULL"]
+    },
+    {
+        q: "Postfix 表達式求值的特性?",
+        options: [
+            "遇到運算子則 pop 兩個運算元進行計算",
+            "複雜度為 Θ(n²)",
+            "由左至右掃描",
+            "遇到運算元則 push"
+        ],
+        ans: ["遇到運算子則 pop 兩個運算元進行計算", "由左至右掃描", "遇到運算元則 push"]
+    },
+    {
+        q: "下列何者為使用「陣列」實作 Stack 的缺點？",
+        options: [
+            "大小固定",
+            "可能發生 overflow",
+            "插入需移動所有元素",
+            "不支援動態擴展"
+        ],
+        ans: ["大小固定", "可能發生 overflow", "不支援動態擴展"]
+    },
+    {
+        q: "陣列（Array）的正確描述有哪些？",
+        options: [
+            "陣列中所有資料型態必須相同",
+            "陣列的資料必須儲存在連續記憶體中",
+            "陣列是一組 <index, value> 配對",
+            "陣列允許任意型別混合"
+        ],
+        ans: ["陣列中所有資料型態必須相同", "陣列的資料必須儲存在連續記憶體中", "陣列是一組 <index, value> 配對"]
+    },
+    {
+        q: "Queue 的抽象資料型別（ADT）的描述哪些是正確的?",
+        options: [
+            "IsFullQ() 與 IsEmptyQ() 為狀態檢查函式",
+            "DeleteQ() 在尾端刪除元素",
+            "AddQ() 在前端加入元素",
+            "CreateQ() 建立空佇列"
+        ],
+        ans: ["IsFullQ() 與 IsEmptyQ() 為狀態檢查函式", "CreateQ() 建立空佇列"]
+    },
+    {
+        q: "稀疏矩陣（Sparse Matrix）的主要概念?",
+        options: [
+            "每項由 [row, col, value] 描述",
+            "與一般矩陣相同以二維陣列儲存",
+            "僅儲存非零元素",
+            "可節省記憶體空間"
+        ],
+        ans: ["每項由 [row, col, value] 描述", "僅儲存非零元素", "可節省記憶體空間"]
+    },
+    {
+        q: "請問 Winner Tree 有哪些用途?",
+        options: [
+            "用於排序演算法的比較最小化",
+            "作為優先佇列使用",
+            "找出最小（或最大）元素",
+            "合併多個排序序列"
+        ],
+        ans: ["用於排序演算法的比較最小化", "找出最小（或最大）元素", "合併多個排序序列"]
+    },
+    {
+        q: "以下 Disjoint Set 的 Union 操作描述哪些正確?",
+        options: [
+            "可用樹結構實作",
+            "執行過多次 union 可能形成退化鏈",
+            "所有元素 parent[i] 初始設為 0",
+            "加權合併（weighted union）可降低高度"
+        ],
+        ans: ["可用樹結構實作", "執行過多次 union 可能形成退化鏈", "加權合併（weighted union）可降低高度"]
+    },
+    {
+        q: "在 Binary Search Tree 刪除節點時，若該節點有兩個子節點，應如何處理?",
+        options: [
+            "以右子樹中最小節點取代",
+            "直接刪除該節點",
+            "任一子樹葉節點取代",
+            "以左子樹中最大節點取代"
+        ],
+        ans: ["以右子樹中最小節點取代", "以左子樹中最大節點取代"]
+    },
+    {
+        q: "若 Stack 空間為 MAX_STACK_SIZE = 100，top = 99 時?",
+        options: [
+            "仍可再 push 一次",
+            "Stack已溢位",
+            "應觸發 stack_full()",
+            "Stack為滿狀態"
+        ],
+        ans: ["應觸發 stack_full()", "Stack為滿狀態"]
+    },
+    {
+        q: "對於 Singly Linked List 的描述哪些正確?",
+        options: [
+            "插入或刪除資料時不需移動其他節點",
+            "每個節點包含資料區與指標區",
+            "節點僅能往前連結，無法往回",
+            "必須使用連續記憶體空間"
+        ],
+        ans: ["插入或刪除資料時不需移動其他節點", "每個節點包含資料區與指標區", "節點僅能往前連結，無法往回"]
+    },
+    {
+        q: "三維陣列 A[i][j][k] 之位址計算?",
+        options: [
+            "可延伸至 n 維通用公式",
+            "α + i × upper1 × upper2 + j × upper2 + k",
+            "α + k × upper1 × upper2 + i × upper2 + j",
+            "採連續記憶體儲存"
+        ],
+        ans: ["可延伸至 n 維通用公式", "α + i × upper1 × upper2 + j × upper2 + k", "採連續記憶體儲存"]
+    },
+    {
+        q: "Polynomial Addition（padd）以陣列實作的演算法，正確的有哪些?",
+        options: [
+            "相等時係數相加",
+            "不需理會剩餘項",
+            "時間複雜度 O(m + n)",
+            "依據指數大小比較"
+        ],
+        ans: ["相等時係數相加", "時間複雜度 O(m + n)", "依據指數大小比較"]
+    },
+    {
+        q: "以下使用可回收節點（available list）的描述正確的有哪些?",
+        options: [
+            "減少 malloc/free 次數",
+            "提高效率",
+            "節點釋放時直接交由作業系統處理",
+            "需要額外的節點指標 avail"
+        ],
+        ans: ["減少 malloc/free 次數", "提高效率", "需要額外的節點指標 avail"]
+    },
+    {
+        q: "在迷宮問題中，使用 Stack 可用來?",
+        options: [
+            "儲存已訪問節點順序",
+            "回溯上一位置",
+            "檢查所有可走方向",
+            "紀錄當前路徑"
+        ],
+        ans: ["儲存已訪問節點順序", "回溯上一位置", "檢查所有可走方向", "紀錄當前路徑"]
+    },
+    {
+        q: "以下自我參考結構（Self-Referential Structure）的定義哪些是正確的?",
+        options: [
+            "常見應用於成員為 data 與 link的資料",
+            "不可使用 malloc 配置記憶體",
+            "可用來建立鏈結串列（linked list）",
+            "結構中包含指向自身型別的指標"
+        ],
+        ans: ["常見應用於成員為 data 與 link的資料", "可用來建立鏈結串列（linked list）", "結構中包含指向自身型別的指標"]
+    },
+    {
+        q: "使用 Threaded Binary Tree 的目的有哪些?",
+        options: [
+            "不需使用stack即可中序走訪",
+            "減少節點數",
+            "減少 null pointer",
+            "提高traverse效率"
+        ],
+        ans: ["不需使用stack即可中序走訪", "減少 null pointer", "提高traverse效率"]
+    },
+    {
+        q: "Linked List 的反轉（invert）操作描述，哪些是正確的?",
+        options: [
+            "使用三個指標：lead、middle、trail",
+            "時間複雜度為 O(n²)",
+            "改變 link 指向方向",
+            "空間複雜度為 O(1)"
+        ],
+        ans: ["使用三個指標：lead、middle、trail", "改變 link 指向方向", "空間複雜度為 O(1)"]
+    },
+    {
+        q: "Circular Queue 使用陣列實作時，下列正確的有哪些?",
+        options: [
+            "front == rear 表示空",
+            "可不用搬移元素來釋放空間",
+            "front == rear+1 表示滿",
+            "rear == front 表示滿"
+        ],
+        ans: ["front == rear 表示空", "可不用搬移元素來釋放空間", "front == rear+1 表示滿"]
+    },
+    {
+        q: "Singly Linked List 實作時，插入節點時的步驟有哪些?",
+        options: [
+            "更新前一節點的 link",
+            "設定新節點的 link 指向插入位置的下一節點",
+            "配置新節點空間",
+            "移動整個串列的所有節點"
+        ],
+        ans: ["更新前一節點的 link", "設定新節點的 link 指向插入位置的下一節點", "配置新節點空間"]
+    },
+    {
+        q: "下列哪些為二元樹陣列儲存法的性質?",
+        options: [
+            "父節點 index = ⌊i/2⌋",
+            "適合儲存偏斜（skewed）樹",
+            "左子節點 index = 2i",
+            "右子節點 index = 2i + 1"
+        ],
+        ans: ["父節點 index = ⌊i/2⌋", "左子節點 index = 2i", "右子節點 index = 2i + 1"]
+    },
+    {
+        q: "對於 Doubly Linked List 的描述哪些正確?",
+        options: [
+            "適合在串列前端或中間插入",
+            "節點含有左右指標（llink、rlink）",
+            "可由任意節點向前或向後遍歷",
+            "無法形成循環結構"
+        ],
+        ans: ["適合在串列前端或中間插入", "節點含有左右指標（llink、rlink）", "可由任意節點向前或向後遍歷"]
+    },
+    {
+        q: "以下 Circular Queue 的描述有哪些是正確的?",
+        options: [
+            "不允許留空位",
+            "陣列首尾相連構成環狀結構",
+            "解決一般佇列空間浪費問題",
+            "front 與 rear 的索引以模數運算更新"
+        ],
+        ans: ["陣列首尾相連構成環狀結構", "解決一般佇列空間浪費問題", "front 與 rear 的索引以模數運算更新"]
+    },
+    {
+        q: "使用一維陣列儲存多項式的缺點?",
+        options: [
+            "無法動態擴充",
+            "計算效率低於鏈結表示",
+            "浪費空間（特別是稀疏多項式）",
+            "必須使用連續記憶體"
+        ],
+        ans: ["無法動態擴充", "計算效率低於鏈結表示", "浪費空間（特別是稀疏多項式）"]
+    },
+    {
+        q: "以下關於 Heap 的描述哪些正確?",
+        options: [
+            "一種完全二元樹",
+            "是二元搜尋樹的一種",
+            "每個節點的鍵值大於等於（或小於等於）其子節點",
+            "適用於實作優先權佇列"
+        ],
+        ans: ["一種完全二元樹", "每個節點的鍵值大於等於（或小於等於）其子節點", "適用於實作優先權佇列"]
+    }
+];
+
+// 狀態變數
+let currentQuizList = [];
+let currentQuestionIndex = 0;
+let score = 0;
+let selectedOptions = new Set();
+let isAnswered = false;
+
+// 隨機洗牌函數
+function shuffle(array) {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex != 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
+}
+
+// 初始化測驗
+function initQuiz() {
+    // 1. 複製題庫並洗牌
+    let shuffled = shuffle([...allQuestions]);
+    // 2. 取前10題
+    currentQuizList = shuffled.slice(0, 10);
+    // 3. 對每一題的選項進行洗牌 (確保不是背位置)
+    currentQuizList.forEach(q => {
+        // 保存正確答案的內容，然後打亂選項順序
+        q.shuffledOptions = shuffle([...q.options]);
+    });
+
+    currentQuestionIndex = 0;
+    score = 0;
+    
+    document.getElementById('quiz-area').style.display = 'block';
+    document.getElementById('result-screen').style.display = 'none';
+    
+    renderQuestion();
+}
+
+// 顯示題目
+function renderQuestion() {
+    const q = currentQuizList[currentQuestionIndex];
+    const container = document.getElementById('question-container');
+    const counter = document.getElementById('q-counter');
+    const progressBar = document.getElementById('progress');
+    const feedback = document.getElementById('feedback-area');
+    
+    // 重置狀態
+    selectedOptions.clear();
+    isAnswered = false;
+    feedback.style.display = 'none';
+    feedback.className = 'feedback';
+    document.getElementById('submit-btn').style.display = 'inline-block';
+    document.getElementById('next-btn').style.display = 'none';
+    
+    // 更新進度
+    counter.innerText = `Question ${currentQuestionIndex + 1} / ${currentQuizList.length}`;
+    progressBar.style.width = `${((currentQuestionIndex) / currentQuizList.length) * 100}%`;
+
+    // 渲染 HTML
+    let html = `
+        <div class="question-card active">
+            <span class="tag">複選題</span>
+            <div class="question-text">${currentQuestionIndex + 1}. ${q.q}</div>
+            <div class="options">
+                ${q.shuffledOptions.map((opt, index) => `
+                    <div class="option" onclick="toggleOption(this, '${opt.replace(/'/g, "\\'")}')">
+                        ${String.fromCharCode(65 + index)}. ${opt}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
+}
+
+// 點擊選項
+function toggleOption(el, optText) {
+    if (isAnswered) return; // 已送出後不能修改
+
+    if (selectedOptions.has(optText)) {
+        selectedOptions.delete(optText);
+        el.classList.remove('selected');
+    } else {
+        selectedOptions.add(optText);
+        el.classList.add('selected');
+    }
+}
+
+// 檢查答案
+function submitAnswer() {
+    if (isAnswered) return;
+    if (selectedOptions.size === 0) {
+        alert("請至少選擇一個選項！");
+        return;
+    }
+
+    isAnswered = true;
+    const q = currentQuizList[currentQuestionIndex];
+    const correctSet = new Set(q.ans);
+    let isCorrect = true;
+
+    // 檢查邏輯：選了不該選的，或沒選該選的
+    if (selectedOptions.size !== correctSet.size) {
+        isCorrect = false;
+    } else {
+        for (let opt of selectedOptions) {
+            if (!correctSet.has(opt)) {
+                isCorrect = false;
+                break;
+            }
+        }
+    }
+
+    if (isCorrect) score++;
+
+    // 顯示結果樣式
+    const optionDivs = document.querySelectorAll('.option');
+    optionDivs.forEach((div, index) => {
+        const optText = q.shuffledOptions[index];
+        const isSelected = selectedOptions.has(optText);
+        const isActuallyCorrect = correctSet.has(optText);
+
+        if (isActuallyCorrect && isSelected) {
+            div.classList.add('correct-answer'); // 選對了 (綠)
+        } else if (isSelected && !isActuallyCorrect) {
+            div.classList.add('wrong-selection'); // 選錯了 (紅)
+        } else if (!isSelected && isActuallyCorrect) {
+            div.classList.add('missed'); // 漏選了 (虛線綠)
+        }
+    });
+
+    // 顯示反饋文字
+    const feedback = document.getElementById('feedback-area');
+    feedback.style.display = 'block';
+    if (isCorrect) {
+        feedback.textContent = "回答正確！🎉";
+        feedback.classList.add('correct');
+    } else {
+        feedback.innerHTML = `<strong>回答錯誤</strong><br>正確答案包含：<br>• ${q.ans.join('<br>• ')}`;
+        feedback.classList.add('wrong');
+    }
+
+    // 切換按鈕
+    document.getElementById('submit-btn').style.display = 'none';
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.style.display = 'inline-block';
+    
+    if (currentQuestionIndex === currentQuizList.length - 1) {
+        nextBtn.innerText = "查看結果";
+    } else {
+        nextBtn.innerText = "下一題";
+    }
+}
+
+// 下一題
+function nextQuestion() {
+    if (currentQuestionIndex < currentQuizList.length - 1) {
+        currentQuestionIndex++;
+        renderQuestion();
+    } else {
+        showResult();
+    }
+}
+
+// 顯示最終分數
+function showResult() {
+    document.getElementById('quiz-area').style.display = 'none';
+    const resultScreen = document.getElementById('result-screen');
+    resultScreen.style.display = 'block';
+    
+    const finalScoreEl = document.getElementById('final-score');
+    const textEl = document.getElementById('score-text');
+    
+    // 動態分數效果
+    let currentScore = 0;
+    const timer = setInterval(() => {
+        finalScoreEl.innerText = currentScore * 10;
+        if (currentScore >= score) {
+            clearInterval(timer);
+        } else {
+            currentScore++;
+        }
+    }, 100);
+
+    const percentage = (score / currentQuizList.length) * 100;
+    if (percentage === 100) {
+        textEl.innerText = "太神啦！全對！💯";
+    } else if (percentage >= 80) {
+        textEl.innerText = "很棒！繼續保持！🔥";
+    } else if (percentage >= 60) {
+        textEl.innerText = "及格了，但還有進步空間。📚";
+    } else {
+        textEl.innerText = "再多複習一下吧！加油！💪";
+    }
+}
+
+// 啟動
+window.onload = initQuiz;
+
+</script>
+</body>
+</html>
