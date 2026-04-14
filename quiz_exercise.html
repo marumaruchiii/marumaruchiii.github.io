@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 知識自我檢測 - 30 題挑戰</title>
+    <title>AI 知識隨機挑戰 - 10 題</title>
     <style>
         :root {
             --primary: #4f46e5;
@@ -63,18 +63,26 @@
         .question-text {
             font-size: 1.3rem;
             line-height: 1.6;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             font-weight: 700;
+            min-height: 4rem;
+        }
+
+        /* 核心空間預留容器 */
+        .content-fixed-height {
+            min-height: 450px; 
+            display: flex;
+            flex-direction: column;
         }
 
         .options-grid {
             display: grid;
-            gap: 1rem;
+            gap: 0.8rem;
         }
 
         .option {
             border: 2px solid #f1f5f9;
-            padding: 1.2rem;
+            padding: 1rem;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
@@ -88,7 +96,6 @@
             background: #f5f3ff;
         }
 
-        /* 即時回饋樣式 */
         .option.correct {
             background-color: #dcfce7 !important;
             border-color: var(--success) !important;
@@ -104,30 +111,41 @@
         .option.wrong::after { content: "✗ Wrong"; position: absolute; right: 20px; font-weight: bold; }
 
         .explanation-box {
-            margin-top: 1.5rem;
-            padding: 1.5rem;
+            margin-top: 1.2rem;
+            padding: 1.2rem;
             background: #f8fafc;
             border-left: 5px solid var(--primary);
             border-radius: 8px;
-            display: none;
-            animation: fadeIn 0.5s;
+            animation: fadeIn 0.4s ease-out;
         }
 
-        .next-btn {
-            width: 100%;
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(-5px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 1rem;
             margin-top: 1.5rem;
-            padding: 1rem;
-            background: var(--primary);
-            color: white;
+            padding-top: 1.5rem;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn {
+            padding: 0.8rem;
             border: none;
             border-radius: 12px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            display: none;
+            transition: opacity 0.2s;
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .btn:hover { opacity: 0.9; }
+
+        .next-btn { background: var(--primary); color: white; flex: 2; }
+        .prev-btn { background: #64748b; color: white; flex: 1; }
 
         .result-screen { text-align: center; display: none; }
     </style>
@@ -139,30 +157,36 @@
     
     <div id="quiz-ui">
         <div class="header">
-            <span id="q-idx">Question 1 / 30</span>
+            <span id="q-idx">Question 1 / 10</span>
             <span id="score-val">Score: 0</span>
         </div>
         <div class="question-text" id="q-text">Loading...</div>
-        <div class="options-grid" id="options-grid"></div>
         
-        <div class="explanation-box" id="explanation-box">
-            <strong style="color: var(--primary);">答案解釋：</strong><br>
-            <p id="exp-text" style="margin-top: 0.5rem;"></p>
+        <div class="content-fixed-height">
+            <div class="options-grid" id="options-grid"></div>
+            
+            <div class="explanation-box" id="explanation-box" style="display: none;">
+                <strong style="color: var(--primary);">答案解釋：</strong><br>
+                <p id="exp-text" style="margin-top: 0.5rem;"></p>
+            </div>
         </div>
         
-        <button class="next-btn" id="next-btn" onclick="nextQuestion()">點擊跳轉下一題</button>
+        <div class="nav-controls">
+            <button class="btn prev-btn" id="prev-btn" onclick="prevQuestion()">上一題</button>
+            <button class="btn next-btn" id="next-btn" onclick="nextQuestion()">下一題</button>
+        </div>
     </div>
 
     <div class="result-screen" id="result-ui">
         <h1 style="font-size: 2.5rem; color: var(--primary);">測驗完成！</h1>
         <div style="font-size: 5rem; font-weight: 900; margin: 1.5rem 0;" id="final-score">0</div>
-        <p style="color: #64748b;">恭喜你完成了 30 題 AI 基礎知識複習</p>
-        <button class="next-btn" style="display:block" onclick="location.reload()">重新開始挑戰</button>
+        <p style="color: #64748b;">恭喜你完成了隨機 10 題挑戰</p>
+        <button class="btn next-btn" style="width:100%; display:block" onclick="startNewQuiz()">重新抽題挑戰</button>
     </div>
 </div>
 
 <script>
-const quizData = [
+const allQuizData = [
     { q: "1. How is a \"rational\" agent formally defined in artificial intelligence?", opts: ["A system that operates purely through logic and never makes mistakes.", "An agent that mimics human reasoning and thought processes.", "An entity that selects actions intended to maximize its expected utility or achieve the best outcome given its goals.", "A machine that is physically embodied to interact with the environment."], a: 2, exp: "A rational agent is technically defined as an entity that perceives and acts to maximize its expected utility or achieve the best outcome based on its goals." },
     { q: "2. Based on current AI capabilities, which of the following tasks is still considered a major challenge that AI cannot reliably perform today?", opts: ["Beating the best humans at the game of Go.", "Fully constructing a building from scratch.", "Winning an art competition using text-to-image generation.", "Translating spoken languages in real time."], a: 1, exp: "Physical tasks such as constructing a building or unloading a dishwasher remain major challenges that current AI cannot reliably perform." },
     { q: "3. According to Stuart Russell’s \"Human-Compatible\" perspective, what should a machine be initially uncertain about?", opts: ["The specific goals and preferences of humans.", "Its own sensors and actuators.", "The physics and dynamics of the environment.", "The computational limits of its own hardware."], a: 0, exp: "Machines should be designed to maximize human utility but should be initially uncertain about what those human preferences actually are." },
@@ -173,95 +197,115 @@ const quizData = [
     { q: "8. A \"stochastic\" environment is one in which:", opts: ["The environment does not change unless the agent acts upon it.", "The agent acts alongside other agents that might be unpredictable.", "Taking an action in a state has a single, guaranteed outcome.", "There is uncertainty in the transition model, meaning an action can lead to multiple possible outcomes with different probabilities."], a: 3, exp: "Stochastic environments involve uncertainty in the transition model." },
     { q: "9. What limitation of perceptrons was highlighted by Minsky and Papert in 1969?", opts: ["They were unable to learn simple functions like XOR or parity.", "They lacked the scale to compete with the human brain.", "They could not handle probabilistic uncertainty.", "They were too slow for real-world robotics."], a: 0, exp: "Minsky and Papert showed that perceptrons were mathematically unable to learn functions like XOR or parity." },
     { q: "10. What is the primary difference between a reflex agent and a planning agent?", opts: ["Only reflex agents are considered rational.", "A reflex agent selects actions based only on the current state, whereas a planning agent simulates actions to hypothesize future consequences.", "A reflex agent uses actuators, while a planning agent only uses sensors.", "Planning agents are designed for static environments, while reflex agents are for dynamic ones."], a: 1, exp: "A planning agent maintains a model of the world to simulate consequences before selecting the best action." },
-    { q: "11. What happens to A* Search if the heuristic used is h(n)=0 for all nodes?", opts: ["It becomes Uniform Cost Search.", "It becomes Greedy Search.", "It fails to find any solution.", "It becomes Depth-First Search."], a: 0, exp: "" },
-    { q: "12. What is the main difference between a \"state space graph\" and a \"search tree\"?", opts: ["A state space graph is always finite, while a search tree is always infinite.", "There is no difference; they are two names for the same structure.", "In a search tree, each node represents an entire path in the state space graph, not just a single state.", "A state space graph uses heuristics, while a search tree does not."], a: 2, exp: "" },
-    { q: "13. A search problem is formally defined by which of the following sets of components?", opts: ["A heuristic function and a transition model.", "A state space, a successor function, a start state, and a goal test.", "Sensors, actuators, and a performance measure.", "Nodes, edges, and weights."], a: 1, exp: "" },
-    { q: "14. Uniform Cost Search (UCS) is optimal because it expands nodes in increasing order of:", opts: ["The depth of the node in the search tree.", "The number of steps from the start state.", "The estimated cost to the goal, h(n).", "The cumulative path cost from the start state to the current node, g(n)."], a: 3, exp: "" },
-    { q: "15. A heuristic function is considered \"admissible\" if:", opts: ["It is derived from a consistent state space graph.", "It never overestimates the true cost to reach the nearest goal.", "It never underestimates the true cost to reach the nearest goal.", "It always equals the actual cost to the goal."], a: 1, exp: "" },
-    { q: "16. Which uninformed search strategy expands the shallowest nodes first and is guaranteed to find the optimal solution if all edge costs are equal?", opts: ["Breadth-First Search (BFS)", "Depth-First Search (DFS)", "Greedy Search", "Uniform Cost Search (UCS)"], a: 0, exp: "" },
-    { q: "17. In the context of A* search on a graph, \"consistency\" of a heuristic means:", opts: ["h(n) <= c + h(n')", "h(n) >= c + h(n')", "h(n) = g(n) + h(n')", "h(n) <= h(n')"], a: 0, exp: "Consistency requires h(n) <= c(n,a,n') + h(n')." },
-    { q: "18. Which informed search algorithm expands nodes by minimizing f(n) = g(n) + h(n)?", opts: ["Uniform Cost Search", "A* Search", "Greedy Search", "Iterative Deepening"], a: 1, exp: "" },
-    { q: "19. Which is an example of a \"relaxed problem\" for the 8-puzzle?", opts: ["Allowing tiles to move to any position (Misplaced Tiles).", "Restricting tiles to only move toward the center.", "Using a non-admissible heuristic.", "Multiplying the Manhattan distance."], a: 0, exp: "" },
-    { q: "20. What is the space complexity of DFS (branching factor b, max depth m)?", opts: ["O(b^m)", "O(m^b)", "O(bm)", "O(b+m)"], a: 2, exp: "" },
-    { q: "21. What is the goal of \"Cutset Conditioning\" in CSPs?", opts: ["To remove all constraints.", "To increase domain size.", "To assign values to a cutset to make the remaining graph a tree.", "To eliminate consistency checking."], a: 2, exp: "" },
-    { q: "22. A CSP is formally defined by which three components?", opts: ["Variables, Domains, and Constraints.", "Nodes, Edges, and Heuristics", "Start State, Successor, Goal Test.", "Sensors, Actuators, Performance."], a: 0, exp: "" },
-    { q: "23. Complexity for tree-structured CSP with n variables and domain size d?", opts: ["O(n!*d)", "O(d^n)", "O(n*(d^2))", "O(n^d)"], a: 2, exp: "" },
-    { q: "24. Which best describes \"Backtracking Search\"?", opts: ["Uninformed search ignoring graph structure.", "DFS choosing values one variable at a time checking constraints.", "BFS checking all constraints at the end.", "Local search towards highest utility."], a: 1, exp: "" },
-    { q: "25. A directed arc X -> Y is \"arc consistent\" if:", opts: ["For every value in X, there is a value in Y that satisfies the constraint.", "Every value in Y has a consistent value in X.", "X and Y have the same domain size.", "No constraints exist between X and Y."], a: 0, exp: "" },
-    { q: "26. The \"Minimum Remaining Values\" (MRV) heuristic decides:", opts: ["How to prune domains.", "Which variable to assign next (fewest legal values).", "When to stop search.", "Which value to assign next."], a: 1, exp: "" },
-    { q: "27. Primary function of \"Forward Checking\"?", opts: ["Track legal values and terminate if domain becomes empty.", "Re-order variables.", "Ensure entire graph is arc consistent.", "Assign values simultaneously."], a: 0, exp: "" },
-    { q: "28. Why use \"Least Constraining Value\" (LCV)?", opts: ["To fail fast.", "To ensure tree structure.", "To choose a value leaving most flexibility for neighbors.", "To reduce variable count."], a: 2, exp: "" },
-    { q: "29. In a constraint graph:", opts: ["Nodes are values.", "Graph must be a tree.", "Nodes are variables, edges are constraints.", "Nodes are constraints."], a: 2, exp: "" },
-    { q: "30. Complexity if CSP graph has Independent Subproblems?", opts: ["Product of subproblem complexities.", "Reduced to O(n/c * d^c).", "Problem becomes unsolvable.", "Remains O(d^n)."], a: 1, exp: "" }
+    { q: "11. What happens to A* Search if the heuristic used is h(n)=0 for all nodes?", opts: ["It becomes Uniform Cost Search.", "It becomes Greedy Search.", "It fails to find any solution.", "It becomes Depth-First Search."], a: 0, exp: "If h(n)=0, A* search becomes Uniform Cost Search." },
+    { q: "12. What is the main difference between a \"state space graph\" and a \"search tree\"?", opts: ["A state space graph is always finite, while a search tree is always infinite.", "There is no difference; they are two names for the same structure.", "In a search tree, each node represents an entire path in the state space graph, not just a single state.", "A state space graph uses heuristics, while a search tree does not."], a: 2, exp: "A search tree node tracks the path taken to reach a state." },
+    { q: "13. A search problem is formally defined by which of the following sets of components?", opts: ["A heuristic function and a transition model.", "A state space, a successor function, a start state, and a goal test.", "Sensors, actuators, and a performance measure.", "Nodes, edges, and weights."], a: 1, exp: "Formal definition includes States, Actions, Transitions, Start, and Goal Test." },
+    { q: "14. Uniform Cost Search (UCS) is optimal because it expands nodes in increasing order of:", opts: ["The depth of the node in the search tree.", "The number of steps from the start state.", "The estimated cost to the goal, h(n).", "The cumulative path cost from the start state to the current node, g(n)."], a: 3, exp: "UCS expands nodes based on g(n)." },
+    { q: "15. A heuristic function is considered \"admissible\" if:", opts: ["It is derived from a consistent state space graph.", "It never overestimates the true cost to reach the nearest goal.", "It never underestimates the true cost to reach the nearest goal.", "It always equals the actual cost to the goal."], a: 1, exp: "Admissibility means h(n) <= h*(n)." },
+    { q: "16. Which uninformed search strategy expands the shallowest nodes first and is guaranteed to find the optimal solution if all edge costs are equal?", opts: ["Breadth-First Search (BFS)", "Depth-First Search (DFS)", "Greedy Search", "Uniform Cost Search (UCS)"], a: 0, exp: "BFS expands level by level." },
+    { q: "17. In the context of A* search on a graph, \"consistency\" of a heuristic means:", opts: ["h(n) <= c + h(n')", "h(n) >= c + h(n')", "h(n) = g(n) + h(n')", "h(n) <= h(n')"], a: 0, exp: "Consistency: h(n) <= cost(n,a,n') + h(n')." },
+    { q: "18. Which informed search algorithm expands nodes by minimizing f(n) = g(n) + h(n)?", opts: ["Uniform Cost Search", "A* Search", "Greedy Search", "Iterative Deepening"], a: 1, exp: "A* Search combines path cost and heuristic." },
+    { q: "19. Which is an example of a \"relaxed problem\" for the 8-puzzle?", opts: ["Allowing tiles to move to any position (Misplaced Tiles).", "Restricting tiles to only move toward the center.", "Using a non-admissible heuristic.", "Multiplying the Manhattan distance."], a: 0, exp: "Relaxing constraints gives easier-to-calculate heuristics." },
+    { q: "20. What is the space complexity of DFS (branching factor b, max depth m)?", opts: ["O(b^m)", "O(m^b)", "O(bm)", "O(b+m)"], a: 2, exp: "DFS only needs to store the path and siblings: O(bm)." },
+    { q: "21. What is the goal of \"Cutset Conditioning\" in CSPs?", opts: ["To remove all constraints.", "To increase domain size.", "To assign values to a cutset to make the remaining graph a tree.", "To eliminate consistency checking."], a: 2, exp: "Instantiating a cutset simplifies the graph." },
+    { q: "22. A CSP is formally defined by which three components?", opts: ["Variables, Domains, and Constraints.", "Nodes, Edges, and Heuristics", "Start State, Successor, Goal Test.", "Sensors, Actuators, Performance."], a: 0, exp: "Variables (X), Domains (D), Constraints (C)." },
+    { q: "23. Complexity for tree-structured CSP with n variables and domain size d?", opts: ["O(n!*d)", "O(d^n)", "O(n*(d^2))", "O(n^d)"], a: 2, exp: "Trees can be solved in linear time: O(nd^2)." },
+    { q: "24. Which best describes \"Backtracking Search\"?", opts: ["Uninformed search ignoring graph structure.", "DFS choosing values one variable at a time checking constraints.", "BFS checking all constraints at the end.", "Local search towards highest utility."], a: 1, exp: "Backtracking is the basic informed search for CSPs." },
+    { q: "25. A directed arc X -> Y is \"arc consistent\" if:", opts: ["For every value in X, there is a value in Y that satisfies the constraint.", "Every value in Y has a consistent value in X.", "X and Y have the same domain size.", "No constraints exist between X and Y."], a: 0, exp: "Arc consistency ensures every value in X has a valid partner in Y." },
+    { q: "26. The \"Minimum Remaining Values\" (MRV) heuristic decides:", opts: ["How to prune domains.", "Which variable to assign next (fewest legal values).", "When to stop search.", "Which value to assign next."], a: 1, exp: "MRV picks the 'most constrained variable' first." },
+    { q: "27. Primary function of \"Forward Checking\"?", opts: ["Track legal values and terminate if domain becomes empty.", "Re-order variables.", "Ensure entire graph is arc consistent.", "Assign values simultaneously."], a: 0, exp: "Forward checking prunes domains of neighbors." },
+    { q: "28. Why use \"Least Constraining Value\" (LCV)?", opts: ["To fail fast.", "To ensure tree structure.", "To choose a value leaving most flexibility for neighbors.", "To reduce variable count."], a: 2, exp: "LCV tries to keep the most options open for later." },
+    { q: "29. In a constraint graph:", opts: ["Nodes are values.", "Graph must be a tree.", "Nodes are variables, edges are constraints.", "Nodes are constraints."], a: 2, exp: "Nodes = Variables, Edges = Binary Constraints." },
+    { q: "30. Complexity if CSP graph has Independent Subproblems?", opts: ["Product of subproblem complexities.", "Reduced to O(n/c * d^c).", "Problem becomes unsolvable.", "Remains O(d^n)."], a: 1, exp: "Splitting independent subproblems reduces exponential factors." }
 ];
 
+let currentQuiz = []; 
+let userAnswers = []; 
 let currentIdx = 0;
-let score = 0;
-let answered = false;
 
-function renderQuestion() {
-    const qData = quizData[currentIdx];
-    document.getElementById('p-bar').style.width = (currentIdx / 30 * 100) + "%";
-    document.getElementById('q-idx').innerText = `Question ${currentIdx + 1} / 30`;
+function startNewQuiz() {
+    // 洗牌抽 10 題
+    const shuffled = [...allQuizData].sort(() => 0.5 - Math.random());
+    currentQuiz = shuffled.slice(0, 10);
+    userAnswers = new Array(10).fill(null);
+    currentIdx = 0;
+    
+    document.getElementById('quiz-ui').style.display = 'block';
+    document.getElementById('result-ui').style.display = 'none';
+    refreshUI();
+}
+
+function refreshUI() {
+    const qData = currentQuiz[currentIdx];
+    const userAnswer = userAnswers[currentIdx];
+
+    // 頂部資訊
+    document.getElementById('p-bar').style.width = ((currentIdx + 1) / 10 * 100) + "%";
+    document.getElementById('q-idx').innerText = `Question ${currentIdx + 1} / 10`;
     document.getElementById('q-text').innerText = qData.q;
     
+    // 即時分數
+    const score = userAnswers.reduce((total, val, i) => (val === currentQuiz[i].a ? total + 10 : total), 0);
+    document.getElementById('score-val').innerText = `Score: ${score}`;
+
+    // 渲染選項
     const grid = document.getElementById('options-grid');
     grid.innerHTML = "";
-    answered = false;
-
     qData.opts.forEach((text, i) => {
         const div = document.createElement('div');
         div.className = 'option';
         div.innerText = `${String.fromCharCode(65+i)}. ${text}`;
-        div.onclick = () => selectOption(div, i);
+        
+        if (userAnswer !== null) {
+            if (i === qData.a) div.classList.add('correct');
+            else if (i === userAnswer) div.classList.add('wrong');
+        } else {
+            div.onclick = () => handleSelect(i);
+        }
         grid.appendChild(div);
     });
-    
-    document.getElementById('explanation-box').style.display = 'none';
-    document.getElementById('next-btn').style.display = 'none';
+
+    // 解釋方塊
+    const expBox = document.getElementById('explanation-box');
+    if (userAnswer !== null) {
+        document.getElementById('exp-text').innerText = qData.exp || "此題無進階解釋。";
+        expBox.style.display = 'block';
+    } else {
+        expBox.style.display = 'none';
+    }
+
+    // 按鈕控制
+    document.getElementById('prev-btn').style.visibility = (currentIdx === 0) ? 'hidden' : 'visible';
+    document.getElementById('next-btn').innerText = (currentIdx === 9) ? "結算分數" : "下一題";
 }
 
-function selectOption(el, idx) {
-    if (answered) return;
-    answered = true;
-    
-    const qData = quizData[currentIdx];
-    const isCorrect = (idx === qData.a);
-    const options = document.querySelectorAll('.option');
-
-    if (isCorrect) {
-        el.classList.add('correct');
-        score += 10;
-        document.getElementById('score-val').innerText = `Score: ${score}`;
-    } else {
-        el.classList.add('wrong');
-        options[qData.a].classList.add('correct');
-    }
-
-    // 顯示解釋
-    if (qData.exp) {
-        document.getElementById('exp-text').innerText = qData.exp;
-        document.getElementById('explanation-box').style.display = 'block';
-    }
-    
-    document.getElementById('next-btn').style.display = 'block';
-    
-    // 3秒後自動跳下一題 (可選)
-    // setTimeout(nextQuestion, 3000);
+function handleSelect(idx) {
+    if (userAnswers[currentIdx] !== null) return;
+    userAnswers[currentIdx] = idx;
+    refreshUI();
 }
 
 function nextQuestion() {
-    currentIdx++;
-    if (currentIdx < quizData.length) {
-        renderQuestion();
+    if (currentIdx < 9) {
+        currentIdx++;
+        refreshUI();
     } else {
+        const score = userAnswers.reduce((total, val, i) => (val === currentQuiz[i].a ? total + 10 : total), 0);
         document.getElementById('quiz-ui').style.display = 'none';
         document.getElementById('result-ui').style.display = 'block';
         document.getElementById('final-score').innerText = score;
     }
 }
 
-renderQuestion();
+function prevQuestion() {
+    if (currentIdx > 0) {
+        currentIdx--;
+        refreshUI();
+    }
+}
+
+startNewQuiz();
 </script>
+
 </body>
 </html>
