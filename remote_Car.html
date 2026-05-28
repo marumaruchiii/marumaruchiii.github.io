@@ -645,7 +645,9 @@ async function connectBT() {
   try {
     log('正在搜尋核心藍牙網關...', 'info');
     btDevice = await navigator.bluetooth.requestDevice({
-    acceptAllDevices: true, // 💡 允許搜尋附近所有藍牙裝置
+    filters: [
+      { namePrefix: 'ESP32' } 
+    ],
     optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
     });
     log(`對接成功: ${btDevice.name}`, 'ok');
