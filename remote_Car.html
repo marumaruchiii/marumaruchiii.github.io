@@ -34,7 +34,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     position: relative;
   }
   
-  /* Noise and Scanline Overlays */
   body::before {
     content: '';
     position: fixed; inset: 0;
@@ -126,7 +125,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     margin: 0 auto;
   }
   
-  /* ── HUD Camera Viewfinder ── */
   .camera-wrap {
     position: relative;
     border-radius: 4px;
@@ -147,7 +145,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
   
   #canvas { display: none; }
   
-  /* Real Corner Reticles */
   .hud-corner {
     position: absolute;
     width: 16px; height: 16px;
@@ -161,7 +158,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
   .hud-corner.bl { bottom:12px; left:12px; border-width:0 0 3px 3px; }
   .hud-corner.br { bottom:12px; right:12px; border-width:0 3px 0 0; }
   
-  /* Cybernetic Scan Box */
   .scan-region {
     position: absolute;
     left: 10%; right: 10%;
@@ -190,7 +186,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.2) 20%, rgba(0,240,255,0.2) 80%, transparent);
   }
   
-  /* Dynamic Path Visualizer */
   .path-bar-wrap {
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -241,7 +236,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     text-align: right;
   }
   
-  /* ── Command Console Card ── */
   .cmd-display {
     background: var(--panel-heavy);
     border: 1px solid var(--border-dim);
@@ -297,7 +291,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     border: 1px solid var(--border-dim);
   }
   
-  /* ── Industrial Tactical Buttons ── */
   .controls {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -392,7 +385,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     box-shadow: 0 0 25px rgba(255,42,95,0.3);
   }
 
-  /* ── Parameter Panel ── */
   .settings-panel {
     background: var(--panel-heavy);
     border: 1px solid var(--border-dim);
@@ -456,7 +448,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     border: 1px solid var(--border-dim);
   }
   
-  /* Cyber Sliders */
   input[type=range] {
     -webkit-appearance: none;
     width: 100%;
@@ -477,7 +468,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     transform: scale(1.2);
   }
   
-  /* ── Terminal Diagnostics Log ── */
   .log-panel {
     background: var(--panel-heavy);
     border: 1px solid var(--border-dim);
@@ -655,8 +645,8 @@ async function connectBT() {
   try {
     log('正在搜尋核心藍牙網關...', 'info');
     btDevice = await navigator.bluetooth.requestDevice({
-      filters: [{name: 'ESP32_CAR_BT'}],
-      optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
+    acceptAllDevices: true, // 💡 允許搜尋附近所有藍牙裝置
+    optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
     });
     log(`對接成功: ${btDevice.name}`, 'ok');
     const server = await btDevice.gatt.connect();
@@ -679,7 +669,6 @@ async function connectBT() {
     document.getElementById('btnAuto').disabled = false;
     btDevice.addEventListener('gattserverdisconnected', onDisconnect);
     log('通訊協議鏈接成功，總線已就緒。', 'ok');
-    await sendCmd('A');
   } catch(e) {
     log('通訊終端建構失敗: ' + (e.message||e), 'err');
   }
@@ -689,7 +678,6 @@ async function disconnectBT() {
   if (isRunning) stopAuto();
   if (btDevice && btDevice.gatt.connected) {
     await sendCmd('S');
-    await sendCmd('M');
     btDevice.gatt.disconnect();
   }
   onDisconnect();
@@ -792,6 +780,7 @@ function analyzeFrame() {
   return { cx: sumX / count, count, width: W };
 }
 
+// 💡 關鍵：免改車核心邏輯。在這裡將偏向訊號，無縫轉換成車子聽得懂的 'G' 與 'H'
 function computeCmd(result) {
   if (!result) return { cmd:'S', label:'VECTOR LOST', offset:null };
   const { cx, width } = result;
@@ -799,13 +788,13 @@ function computeCmd(result) {
   const offset = cx - center;
   const pct = Math.round((offset / (width/2)) * 100);
   
-  if (offset < -threshold) return { cmd:'L', label:'VECTOR DEVIATION: LEFT', offset: pct };
-  if (offset > threshold) return { cmd:'R', label:'VECTOR DEVIATION: RIGHT', offset: pct };
+  if (offset < -threshold) return { cmd:'G', label:'VECTOR DEVIATION: LEFT', offset: pct };
+  if (offset > threshold) return { cmd:'H', label:'VECTOR DEVIATION: RIGHT', offset: pct };
   return { cmd:'F', label:'VECTOR ALIGNED', offset: pct };
 }
 
-const CMD_ARROWS = { F:'▲', B:'▼', L:'◀', R:'▶', S:'■' };
-const CMD_COLORS = { F:'cmd-F', L:'cmd-L', R:'cmd-R', S:'cmd-S', B:'cmd-B' };
+const CMD_ARROWS = { F:'▲', B:'▼', L:'◀', R:'▶', G:'◀', H:'▶', S:'■' };
+const CMD_COLORS = { F:'cmd-F', L:'cmd-L', R:'cmd-R', G:'cmd-L', H:'cmd-R', S:'cmd-S', B:'cmd-B' };
 
 function updateUI(cmd, label, offset) {
   const arrowEl = document.getElementById('cmdArrow');
