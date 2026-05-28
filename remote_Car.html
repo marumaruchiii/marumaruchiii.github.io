@@ -1,5 +1,4 @@
-cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
-<!DOCTYPE html><html lang="zh-HK"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>遙測自動循線終端 Engine v2.0</title><style>
+<!DOCTYPE html><html lang="zh-HK"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>遙測自動循線終端 Serial v3.0</title><style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700;900&family=Noto+Sans+HK:wght@500;700&display=swap');
   
   :root {
@@ -42,14 +41,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     pointer-events: none;
     z-index: 999;
     opacity: 0.4;
-  }
-  
-  body::after {
-    content: '';
-    position: fixed; inset: 0;
-    background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(7,9,14,0.8) 100%);
-    pointer-events: none;
-    z-index: 998;
   }
 
   header {
@@ -106,7 +97,6 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     letter-spacing: 1.5px;
     background: rgba(0,0,0,0.2);
     text-transform: uppercase;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .status-pill.connected {
@@ -132,386 +122,104 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
     border: 1px solid var(--border-dim);
     background: #020406;
     aspect-ratio: 4/3;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
   
-  #video {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
-    mix-blend-mode: screen;
-    filter: saturate(1.2) contrast(1.1);
-  }
-  
+  #video { width: 100%; height: 100%; object-fit: cover; display: block; mix-blend-mode: screen; }
   #canvas { display: none; }
   
-  .hud-corner {
-    position: absolute;
-    width: 16px; height: 16px;
-    border-color: var(--neon-cyan);
-    border-style: solid;
-    opacity: 0.85;
-    filter: drop-shadow(0 0 4px var(--neon-cyan));
-  }
+  .hud-corner { position: absolute; width: 16px; height: 16px; border-color: var(--neon-cyan); border-style: solid; opacity: 0.85; }
   .hud-corner.tl { top:12px; left:12px; border-width:3px 0 0 3px; }
   .hud-corner.tr { top:12px; right:12px; border-width:3px 3px 0 0; }
   .hud-corner.bl { bottom:12px; left:12px; border-width:0 0 3px 3px; }
   .hud-corner.br { bottom:12px; right:12px; border-width:0 3px 0 0; }
   
   .scan-region {
-    position: absolute;
-    left: 10%; right: 10%;
-    bottom: 10%; height: 25%;
-    border: 1px solid rgba(0,240,255,0.2);
-    background: rgba(0, 240, 255, 0.02);
-    box-shadow: inset 0 0 15px rgba(0,240,255,0.05);
+    position: absolute; left: 10%; right: 10%; bottom: 10%; height: 25%;
+    border: 1px solid rgba(0,240,255,0.2); background: rgba(0, 240, 255, 0.02);
   }
   
   .scan-region::before {
-    content: '▼ TELEMETRY GATE SCAN';
-    position: absolute;
-    top: -16px; left: 6px;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--neon-cyan);
-    letter-spacing: 1px;
-    opacity: 0.7;
+    content: '▼ TELEMETRY GATE SCAN'; position: absolute; top: -16px; left: 6px;
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--neon-cyan);
   }
   
   .center-mark {
-    position: absolute;
-    left: 50%; top: 0; bottom: 0;
-    width: 1px;
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 1px;
     background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.2) 20%, rgba(0,240,255,0.2) 80%, transparent);
   }
   
   .path-bar-wrap {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 44px;
+    position: absolute; bottom: 0; left: 0; right: 0; height: 44px;
     background: linear-gradient(to top, rgba(7,9,14,0.95), rgba(7,9,14,0.7));
-    border-top: 1px solid var(--border-dim);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    gap: 14px;
+    border-top: 1px solid var(--border-dim); display: flex; align-items: center; padding: 0 16px; gap: 14px;
   }
   
-  .path-bar-track {
-    flex: 1;
-    height: 6px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 3px;
-    position: relative;
-    overflow: visible;
-  }
-  
+  .path-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; position: relative; }
   .path-bar-fill {
-    position: absolute;
-    top: -2px; height: 10px;
-    background: var(--neon-cyan);
-    box-shadow: 0 0 12px var(--neon-cyan);
-    width: 6px;
-    border-radius: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: left 0.08s cubic-bezier(0.25, 1, 0.5, 1);
+    position: absolute; top: -2px; height: 10px; background: var(--neon-cyan);
+    box-shadow: 0 0 12px var(--neon-cyan); width: 6px; border-radius: 2px; left: 50%;
+    transform: translateX(-50%); transition: left 0.08s cubic-bezier(0.25, 1, 0.5, 1);
   }
+  .path-bar-center { position: absolute; top: -6px; bottom: -6px; left: 50%; width: 2px; background: var(--text-ghost); transform: translateX(-50%); }
+  .path-label { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--neon-cyan); min-width: 45px; text-align: right; }
   
-  .path-bar-center {
-    position: absolute;
-    top: -6px; bottom: -6px;
-    left: 50%; width: 2px;
-    background: var(--text-ghost);
-    transform: translateX(-50%);
-  }
-  
-  .path-label {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--neon-cyan);
-    min-width: 45px;
-    text-align: right;
-  }
-  
-  .cmd-display {
-    background: var(--panel-heavy);
-    border: 1px solid var(--border-dim);
-    padding: 18px 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    position: relative;
-  }
-  
-  .cmd-arrow {
-    font-family: var(--font-display);
-    font-size: 32px;
-    min-width: 50px;
-    text-align: center;
-    transition: transform 0.2s, filter 0.2s;
-  }
+  .cmd-display { background: var(--panel-heavy); border: 1px solid var(--border-dim); padding: 18px 24px; display: flex; align-items: center; gap: 20px; }
+  .cmd-arrow { font-family: var(--font-display); font-size: 32px; min-width: 50px; text-align: center; }
   
   .cmd-F { color: var(--neon-green); filter: drop-shadow(0 0 8px var(--neon-green)); }
   .cmd-L { color: var(--neon-cyan); filter: drop-shadow(0 0 8px var(--neon-cyan)); }
   .cmd-R { color: var(--neon-cyan); filter: drop-shadow(0 0 8px var(--neon-cyan)); }
   .cmd-S { color: var(--text-muted); filter: none; }
-  .cmd-B { color: var(--neon-amber); filter: drop-shadow(0 0 8px var(--neon-amber)); }
   
   .cmd-info { flex: 1; }
+  .cmd-char { font-family: var(--font-display); font-size: 36px; font-weight: 900; line-height: 0.9; }
+  .cmd-name { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 6px; letter-spacing: 2px; text-transform: uppercase; }
+  .cmd-offset { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; background: rgba(0,0,0,0.2); padding: 6px 12px; border: 1px solid var(--border-dim); }
   
-  .cmd-char {
-    font-family: var(--font-display);
-    font-size: 36px;
-    font-weight: 900;
-    line-height: 0.9;
-    letter-spacing: 1px;
-  }
-  
-  .cmd-name {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-top: 6px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-  
-  .cmd-offset {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-align: right;
-    background: rgba(0,0,0,0.2);
-    padding: 6px 12px;
-    border-radius: 2px;
-    border: 1px solid var(--border-dim);
-  }
-  
-  .controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .btn {
-    padding: 16px;
-    border-radius: 2px;
-    border: 1px solid var(--border-dim);
-    background: var(--panel-light);
-    color: var(--text-pure);
-    font-family: var(--font-display);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    -webkit-tap-highlight-color: transparent;
+    padding: 16px; border-radius: 2px; border: 1px solid var(--border-dim); background: var(--panel-light); color: var(--text-pure);
+    font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px; -webkit-tap-highlight-color: transparent; transition: all 0.2s;
   }
-  
-  .btn:hover {
-    background: var(--border-dim);
-    border-color: var(--text-muted);
-  }
-  
+  .btn:hover { background: var(--border-dim); border-color: var(--text-muted); }
   .btn:active { transform: scale(0.98); }
   
-  .btn-connect {
-    border-color: rgba(0,240,255,0.3);
-    color: var(--neon-cyan);
-    background: rgba(0,240,255,0.02);
-  }
-  .btn-connect:hover {
-    background: rgba(0,240,255,0.08);
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 15px rgba(0,240,255,0.15);
-  }
-  .btn-connect.connected {
-    border-color: var(--neon-green);
-    color: var(--neon-green);
-    background: rgba(0,255,102,0.04);
-  }
+  .btn-connect { border-color: rgba(0,240,255,0.3); color: var(--neon-cyan); background: rgba(0,240,255,0.02); }
+  .btn-connect.connected { border-color: var(--neon-green); color: var(--neon-green); background: rgba(0,255,102,0.04); }
   
-  .btn-auto {
-    border-color: rgba(0,255,102,0.3);
-    color: var(--neon-green);
-    background: rgba(0,255,102,0.02);
-    grid-column: 1 / -1;
-    padding: 18px;
-    font-size: 13px;
-  }
-  .btn-auto:hover:not(:disabled) {
-    background: rgba(0,255,102,0.08);
-    border-color: var(--neon-green);
-    box-shadow: 0 0 20px rgba(0,255,102,0.2);
-  }
-  .btn-auto:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    border-color: var(--border-dim);
-    color: var(--text-muted);
-  }
-  .btn-auto.running {
-    background: rgba(0,255,102,0.12);
-    border-color: var(--neon-green);
-    animation: pulseBorder 2s infinite;
-  }
+  .btn-auto { border-color: rgba(0,255,102,0.3); color: var(--neon-green); background: rgba(0,255,102,0.02); grid-column: 1 / -1; padding: 18px; font-size: 13px; }
+  .btn-auto.running { background: rgba(0,255,102,0.12); border-color: var(--text-pure); animation: pulseBorder 2s infinite; }
   
-  @keyframes pulseBorder {
-    0%, 100% { box-shadow: 0 0 10px rgba(0,255,102,0.2); }
-    50% { box-shadow: 0 0 25px rgba(0,255,102,0.5); border-color: var(--text-pure); }
-  }
+  @keyframes pulseBorder { 0%, 100% { box-shadow: 0 0 10px rgba(0,255,102,0.2); } 50% { box-shadow: 0 0 25px rgba(0,255,102,0.5); border-color: var(--text-pure); } }
   
-  .btn-stop {
-    border-color: var(--neon-crimson);
-    color: var(--neon-crimson);
-    background: rgba(255,42,95,0.05);
-    grid-column: 1 / -1;
-    padding: 18px;
-    font-size: 14px;
-    font-weight: 900;
-    box-shadow: 0 0 15px rgba(255,42,95,0.1);
-  }
-  .btn-stop:hover {
-    background: rgba(255,42,95,0.15);
-    box-shadow: 0 0 25px rgba(255,42,95,0.3);
-  }
-
-  .settings-panel {
-    background: var(--panel-heavy);
-    border: 1px solid var(--border-dim);
-  }
+  .settings-panel { background: var(--panel-heavy); border: 1px solid var(--border-dim); }
+  .settings-header { padding: 14px 20px; border-bottom: 1px solid var(--border-dim); font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+  .settings-body { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+  .setting-row { display: flex; flex-direction: column; gap: 8px; }
+  .setting-meta { display: flex; justify-content: space-between; align-items: flex-end; }
+  .setting-label { font-size: 12px; font-weight: 700; color: var(--text-pure); }
+  .setting-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .setting-val { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--neon-cyan); background: rgba(0,0,0,0.3); padding: 2px 8px; border: 1px solid var(--border-dim); }
   
-  .settings-header {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border-dim);
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .settings-header:hover { color: var(--text-pure); }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--border-dim); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan); cursor: pointer; }
   
-  .settings-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-  
-  .setting-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .setting-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-  }
-  
-  .setting-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-pure);
-    letter-spacing: 0.5px;
-  }
-  
-  .setting-sub {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-  
-  .setting-val {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--neon-cyan);
-    background: rgba(0,0,0,0.3);
-    padding: 2px 8px;
-    border: 1px solid var(--border-dim);
-  }
-  
-  input[type=range] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 4px;
-    background: var(--border-dim);
-    outline: none;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px; height: 14px;
-    border-radius: 0;
-    background: var(--neon-cyan);
-    box-shadow: 0 0 8px var(--neon-cyan);
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-  input[type=range]::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-  }
-  
-  .log-panel {
-    background: var(--panel-heavy);
-    border: 1px solid var(--border-dim);
-  }
-  
-  .log-header {
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border-dim);
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--text-muted);
-  }
-  
-  #log {
-    padding: 14px 20px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-    height: 100px;
-    overflow-y: auto;
-    line-height: 1.8;
-  }
-  
+  .log-panel { background: var(--panel-heavy); border: 1px solid var(--border-dim); }
+  .log-header { padding: 12px 20px; border-bottom: 1px solid var(--border-dim); font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--text-muted); }
+  #log { padding: 14px 20px; font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,0.4); height: 100px; overflow-y: auto; line-height: 1.8; }
   #log .info { color: var(--text-muted); }
   #log .ok   { color: var(--neon-green); }
   #log .err  { color: var(--neon-crimson); font-weight: bold; }
   #log .cmd  { color: var(--neon-amber); }
-
-  #debugCanvas {
-    width: 100%;
-    border: 1px solid var(--border-dim);
-    image-rendering: pixelated;
-    display: none;
-    margin-top: 4px;
-  }
+  #debugCanvas { width: 100%; border: 1px solid var(--border-dim); image-rendering: pixelated; display: none; margin-top: 4px; }
   #debugCanvas.visible { display: block; }
 </style></head><body>
 
 <header>
   <div class="logo-container">
     <div class="logo-dot"></div>
-    <h1>Telemetry Terminal</h1>
+    <h1>Telemetry Serial Terminal</h1>
   </div>
   <div class="status-pill" id="statusPill">Offline</div>
 </header>
@@ -520,22 +228,13 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
   <div class="camera-wrap">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
-    <div class="hud-corner tl"></div>
-    <div class="hud-corner tr"></div>
-    <div class="hud-corner bl"></div>
-    <div class="hud-corner br"></div>
-    <div class="center-mark"></div>
-    <div class="scan-region"></div>
-    
+    <div class="hud-corner tl"></div><div class="hud-corner tr"></div><div class="hud-corner bl"></div><div class="hud-corner br"></div>
+    <div class="center-mark"></div><div class="scan-region"></div>
     <div class="path-bar-wrap">
       <span class="path-label" id="pathPct">--</span>
-      <div class="path-bar-track">
-        <div class="path-bar-center"></div>
-        <div class="path-bar-fill" id="pathBarFill"></div>
-      </div>
+      <div class="path-bar-track"><div class="path-bar-center"></div><div class="path-bar-fill" id="pathBarFill"></div></div>
     </div>
   </div>
-
   <canvas id="debugCanvas"></canvas>
 
   <div class="cmd-display">
@@ -548,83 +247,55 @@ cat > /mnt/user-data/outputs/car_auto_controller.html << 'HTMLEOF'
   </div>
 
   <div class="controls">
-    <button class="btn btn-connect" id="btnConnect" onclick="connectBT()">
-      ⚡ CONNECT BT
+    <button class="btn btn-connect" id="btnConnect" onclick="connectSerial()">
+      🔌 CONNECT VIA PORT (COM)
     </button>
     <button class="btn" id="btnCam" onclick="startCamera()">
       📷 OPEN CAM
     </button>
-    <button class="btn btn-auto" id="btnAuto" onclick="toggleAuto()" disabled>
+    <button class="btn btn-auto" id="btnAuto" onclick="toggleAuto()">
       ▰ START VECTOR ALIGN
-    </button>
-    <button class="btn btn-stop" id="btnStop" onclick="emergencyStop()" style="display:none">
-      🚨 EMERGENCY BREAK
     </button>
   </div>
 
   <div class="settings-panel">
-    <div class="settings-header" onclick="toggleSettings()">
-      CORE PARAMETERS <span id="settingsArrow">▼</span>
-    </div>
+    <div class="settings-header" onclick="toggleSettings()">CORE PARAMETERS <span id="settingsArrow">▼</span></div>
     <div class="settings-body" id="settingsBody">
       <div class="setting-row">
         <div class="setting-meta">
-          <div>
-            <div class="setting-label">STEER THRESHOLD</div>
-            <div class="setting-sub">觸發轉向的像素偏差臨界點</div>
-          </div>
+          <div><div class="setting-label">STEER THRESHOLD</div><div class="setting-sub">觸發轉向的像素偏差臨界點</div></div>
           <span class="setting-val" id="sThresholdVal">20px</span>
         </div>
-        <input type="range" id="sThreshold" min="5" max="50" value="20"
-          oninput="threshold=+this.value;document.getElementById('sThresholdVal').textContent=this.value+'px'">
+        <input type="range" id="sThreshold" min="5" max="50" value="20" oninput="threshold=+this.value;document.getElementById('sThresholdVal').textContent=this.value+'px'">
       </div>
-      
       <div class="setting-row">
         <div class="setting-meta">
-          <div>
-            <div class="setting-label">CHROMATIC SENSITIVITY</div>
-            <div class="setting-sub">黑色線條 V 值上限門檻</div>
-          </div>
+          <div><div class="setting-label">CHROMATIC SENSITIVITY</div><div class="setting-sub">黑色線條 V 值上限門檻</div></div>
           <span class="setting-val" id="sBlackVal">60</span>
         </div>
-        <input type="range" id="sBlack" min="20" max="100" value="60"
-          oninput="blackThreshold=+this.value;document.getElementById('sBlackVal').textContent=this.value">
+        <input type="range" id="sBlack" min="20" max="100" value="60" oninput="blackThreshold=+this.value;document.getElementById('sBlackVal').textContent=this.value">
       </div>
-      
       <div class="setting-row">
         <div class="setting-meta">
-          <div>
-            <div class="setting-label">TELEMETRY INTERVAL</div>
-            <div class="setting-sub">影像循環幀掃描間隔</div>
-          </div>
+          <div><div class="setting-label">TELEMETRY INTERVAL</div><div class="setting-sub">影像循環幀掃描間隔</div></div>
           <span class="setting-val" id="sIntervalVal">120ms</span>
         </div>
-        <input type="range" id="sInterval" min="50" max="500" value="120" step="10"
-          oninput="scanInterval=+this.value;document.getElementById('sIntervalVal').textContent=this.value+'ms'">
+        <input type="range" id="sInterval" min="50" max="500" value="120" step="10" oninput="scanInterval=+this.value;document.getElementById('sIntervalVal').textContent=this.value+'ms'">
       </div>
-      
       <div class="setting-row">
         <div class="setting-meta">
-          <div>
-            <div class="setting-label">DIAGNOSTIC VIEW</div>
-            <div class="setting-sub">渲染輸出二值化邊緣矩陣</div>
-          </div>
+          <div><div class="setting-label">DIAGNOSTIC VIEW</div><div class="setting-sub">渲染輸出二值化邊緣矩陣</div></div>
           <span class="setting-val" id="sDebugVal">OFF</span>
         </div>
-        <input type="range" id="sDebug" min="0" max="1" value="0" step="1"
-          oninput="debugMode=!!+this.value;document.getElementById('sDebugVal').textContent=debugMode?'ON':'OFF';document.getElementById('debugCanvas').classList.toggle('visible',debugMode)">
+        <input type="range" id="sDebug" min="0" max="1" value="0" step="1" oninput="debugMode=!!+this.value;document.getElementById('sDebugVal').textContent=debugMode?'ON':'OFF';document.getElementById('debugCanvas').classList.toggle('visible',debugMode)">
       </div>
     </div>
   </div>
-
-  <div class="log-panel">
-    <div class="log-header">SYSTEM DIAGNOSTICS</div>
-    <div id="log"></div>
-  </div>
+  <div class="log-panel"><div class="log-header">SYSTEM DIAGNOSTICS</div><div id="log"></div></div>
 </main>
 
 <script>
-let btDevice = null, btChar = null;
+let serialPort = null, serialWriter = null;
 let isConnected = false, isRunning = false;
 let lastCmd = '';
 let scanTimer = null;
@@ -637,99 +308,61 @@ function log(msg, type='info') {
   const t = new Date().toLocaleTimeString('zh',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   el.innerHTML += `<div class="${type}">[${t}] ${msg}</div>`;
   el.scrollTop = el.scrollHeight;
-  while (el.children.length > 30) el.removeChild(el.firstChild);
 }
 
-async function connectBT() {
-  if (isConnected) { disconnectBT(); return; }
+// 💡 核心轉換：改用穩定的 Web Serial API
+async function connectSerial() {
+  if (isConnected) { disconnectSerial(); return; }
   try {
-    log('正在搜尋核心藍牙網關...', 'info');
-    btDevice = await navigator.bluetooth.requestDevice({
-    filters: [
-      { namePrefix: 'ESP32' }
-    ],
-    optionalServices: [
-      '00001101-0000-1000-8000-00805f9b34fb', 
-      '00001101-0000-1000-8000-00805f9b34fc'  
-    ]
-    });
-    log(`對接成功: ${btDevice.name}`, 'ok');
-    const server = await btDevice.gatt.connect();
+    log('請在彈出視窗中選取對應小車的藍牙虛擬 COM 埠...', 'info');
+    serialPort = await navigator.serial.requestPort();
+    // 經典藍牙 SPP 預設波特率通常為 9600 或 115200，這裡設定為 115200
+    await serialPort.open({ baudRate: 115200 });
     
-    let service;
-    try {
-      service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
-    } catch(e) {
-      log('標準 SPP 握手失敗，執行相容性調解...', 'info');
-      throw new Error('請驗證系統名與 Chromium 核心許可權。');
-    }
-    const chars = await service.getCharacteristics();
-    btChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse) || chars[0];
-    
+    serialWriter = serialPort.writable.getWriter();
     isConnected = true;
-    document.getElementById('btnConnect').textContent = '🔌 DISCONNECT';
+    
+    document.getElementById('btnConnect').textContent = '🔌 DISCONNECT PORT';
     document.getElementById('btnConnect').classList.add('connected');
     document.getElementById('statusPill').textContent = 'Online';
     document.getElementById('statusPill').classList.add('connected');
-    document.getElementById('btnAuto').disabled = false;
-    btDevice.addEventListener('gattserverdisconnected', onDisconnect);
-    log('通訊協議鏈接成功，總線已就緒。', 'ok');
+    log('無線序列總線接通成功！通訊終端已就緒。', 'ok');
   } catch(e) {
-    log('通訊終端建構失敗: ' + (e.message||e), 'err');
+    log('序列埠對接失敗: ' + e.message, 'err');
   }
 }
 
-async function disconnectBT() {
+async function disconnectSerial() {
   if (isRunning) stopAuto();
-  if (btDevice && btDevice.gatt.connected) {
-    await sendCmd('S');
-    btDevice.gatt.disconnect();
-  }
-  onDisconnect();
-}
-
-function onDisconnect() {
+  if (serialWriter) { await serialWriter.releaseLock(); serialWriter = null; }
+  if (serialPort) { await serialPort.close(); serialPort = null; }
   isConnected = false;
-  btChar = null;
-  document.getElementById('btnConnect').textContent = '⚡ CONNECT BT';
+  document.getElementById('btnConnect').textContent = '🔌 CONNECT VIA PORT (COM)';
   document.getElementById('btnConnect').classList.remove('connected');
   document.getElementById('statusPill').textContent = 'Offline';
   document.getElementById('statusPill').classList.remove('connected');
-  document.getElementById('btnAuto').disabled = true;
-  if (isRunning) stopAuto();
-  log('藍牙總線中斷連接。', 'err');
+  log('通訊總線已安全中斷。', 'info');
 }
 
 async function sendCmd(cmd) {
-  if (!btChar) return;
+  if (!serialWriter) return;
   try {
     const data = new TextEncoder().encode(cmd);
-    if (btChar.properties.writeWithoutResponse) {
-      await btChar.writeValueWithoutResponse(data);
-    } else {
-      await btChar.writeValue(data);
-    }
+    await serialWriter.write(data);
   } catch(e) {
-    log('指令丟包: ' + e.message, 'err');
+    log('發送失敗: ' + e.message, 'err');
   }
 }
 
 async function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width:{ideal:640}, height:{ideal:480} }
-    });
-    const video = document.getElementById('video');
-    video.srcObject = stream;
-    await video.play();
-    log('光學傳感器串流已初始化。', 'ok');
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width:640, height:480 } });
+    document.getElementById('video').srcObject = stream;
+    log('光學傳感器已就緒。', 'ok');
     document.getElementById('btnCam').textContent = '✅ VIDEO LIVE';
     document.getElementById('btnCam').style.borderColor = 'var(--neon-green)';
     document.getElementById('btnCam').style.color = 'var(--neon-green)';
-    if (isConnected) document.getElementById('btnAuto').disabled = false;
-  } catch(e) {
-    log('光學取景失敗: ' + e.message, 'err');
-  }
+  } catch(e) { log('鏡頭開啟失敗: ' + e.message, 'err'); }
 }
 
 function analyzeFrame() {
@@ -743,10 +376,8 @@ function analyzeFrame() {
   const imgData = ctx.getImageData(0, 0, W, H);
   const px = imgData.data;
   
-  const scanTop  = Math.floor(H * 0.65);
-  const scanBot  = Math.floor(H * 0.90);
-  const scanLeft = Math.floor(W * 0.10);
-  const scanRight= Math.floor(W * 0.90);
+  const scanTop = Math.floor(H * 0.65), scanBot = Math.floor(H * 0.90);
+  const scanLeft = Math.floor(W * 0.10), scanRight = Math.floor(W * 0.90);
   let sumX = 0, count = 0;
   
   let dbgCtx = null, dbgData = null;
@@ -761,131 +392,60 @@ function analyzeFrame() {
   for (let y = scanTop; y < scanBot; y++) {
     for (let x = scanLeft; x < scanRight; x++) {
       const i = (y * W + x) * 4;
-      const v = Math.max(px[i], px[i+1], px[i+2]);
-      if (v < blackThreshold) {
-        sumX += x;
-        count++;
-        if (dbgData) {
-          dbgData.data[i]   = 0;
-          dbgData.data[i+1] = 255;
-          dbgData.data[i+2] = 102;
-        }
+      if (Math.max(px[i], px[i+1], px[i+2]) < blackThreshold) {
+        sumX += x; count++;
+        if (dbgData) { dbgData.data[i]=0; dbgData.data[i+1]=255; dbgData.data[i+2]=102; }
       }
     }
   }
-  
   if (dbgCtx && dbgData) {
     dbgCtx.putImageData(dbgData, 0, 0);
-    dbgCtx.strokeStyle = '#00f0ff';
-    dbgCtx.lineWidth = 1;
-    dbgCtx.strokeRect(scanLeft, scanTop, scanRight-scanLeft, scanBot-scanTop);
+    dbgCtx.strokeStyle = '#00f0ff'; dbgCtx.strokeRect(scanLeft, scanTop, scanRight-scanLeft, scanBot-scanTop);
   }
-  
-  if (count < 30) return null;
-  return { cx: sumX / count, count, width: W };
+  return count < 30 ? null : { cx: sumX / count, width: W };
 }
 
-// 💡 關鍵：免改車核心邏輯。在這裡將偏向訊號，無縫轉換成車子聽得懂的 'G' 與 'H'
 function computeCmd(result) {
   if (!result) return { cmd:'S', label:'VECTOR LOST', offset:null };
-  const { cx, width } = result;
-  const center = width / 2;
-  const offset = cx - center;
-  const pct = Math.round((offset / (width/2)) * 100);
-  
+  const offset = result.cx - (result.width / 2);
+  const pct = Math.round((offset / (result.width/2)) * 100);
   if (offset < -threshold) return { cmd:'G', label:'VECTOR DEVIATION: LEFT', offset: pct };
   if (offset > threshold) return { cmd:'H', label:'VECTOR DEVIATION: RIGHT', offset: pct };
   return { cmd:'F', label:'VECTOR ALIGNED', offset: pct };
 }
 
-const CMD_ARROWS = { F:'▲', B:'▼', L:'◀', R:'▶', G:'◀', H:'▶', S:'■' };
-const CMD_COLORS = { F:'cmd-F', L:'cmd-L', R:'cmd-R', G:'cmd-L', H:'cmd-R', S:'cmd-S', B:'cmd-B' };
+const CMD_ARROWS = { F:'▲', G:'◀', H:'▶', S:'■' };
+const CMD_COLORS = { F:'cmd-F', G:'cmd-L', H:'cmd-R', S:'cmd-S' };
 
 function updateUI(cmd, label, offset) {
-  const arrowEl = document.getElementById('cmdArrow');
-  const charEl  = document.getElementById('cmdChar');
-  const nameEl  = document.getElementById('cmdName');
-  const offEl   = document.getElementById('cmdOffset');
-  const fillEl  = document.getElementById('pathBarFill');
-  const pctEl   = document.getElementById('pathPct');
-  
-  arrowEl.textContent = CMD_ARROWS[cmd] || '■';
-  arrowEl.className = 'cmd-arrow ' + (CMD_COLORS[cmd] || 'cmd-S');
-  charEl.textContent = cmd;
-  nameEl.textContent = label;
-  
+  document.getElementById('cmdArrow').textContent = CMD_ARROWS[cmd] || '■';
+  document.getElementById('cmdArrow').className = 'cmd-arrow ' + (CMD_COLORS[cmd] || 'cmd-S');
+  document.getElementById('cmdChar').textContent = cmd;
+  document.getElementById('cmdName').textContent = label;
+  const fillEl = document.getElementById('pathBarFill');
+  const pctEl = document.getElementById('pathPct');
   if (offset !== null) {
-    offEl.textContent = `DEV: ${offset > 0 ? '+' : ''}${offset}%`;
+    document.getElementById('cmdOffset').textContent = `DEV: ${offset > 0 ? '+' : ''}${offset}%`;
     const pos = 50 + (offset / 2);
     fillEl.style.left = Math.max(2, Math.min(98, pos)) + '%';
     pctEl.textContent = (offset > 0 ? '+' : '') + offset + '%';
     fillEl.style.background = Math.abs(offset) > 40 ? 'var(--neon-crimson)' : 'var(--neon-cyan)';
-    fillEl.style.boxShadow = `0 0 12px ${Math.abs(offset) > 40 ? 'var(--neon-crimson)' : 'var(--neon-cyan)'}`;
   } else {
-    offEl.textContent = 'DEV: STALE';
-    pctEl.textContent = '--';
-    fillEl.style.left = '50%';
-    fillEl.style.background = 'var(--text-ghost)';
-    fillEl.style.boxShadow = 'none';
+    document.getElementById('cmdOffset').textContent = 'DEV: STALE';
+    pctEl.textContent = '--'; fillEl.style.left = '50%'; fillEl.style.background = 'var(--text-ghost)';
   }
 }
 
 async function autoTick() {
   if (!isRunning) return;
-  const result = analyzeFrame();
-  const { cmd, label, offset } = computeCmd(result);
+  const { cmd, label, offset } = computeCmd(analyzeFrame());
   updateUI(cmd, label, offset);
-  if (cmd !== lastCmd) {
-    lastCmd = cmd;
-    if (isConnected) {
-      await sendCmd(cmd);
-      log(`EXEC → [${cmd}] ${label}`, 'cmd');
-    }
-  }
+  if (cmd !== lastCmd) { lastCmd = cmd; if (isConnected) { await sendCmd(cmd); log(`EXEC → [${cmd}] ${cmd==='F'?'直行':cmd==='G'?'左轉':'右轉'}`, 'cmd'); } }
 }
 
-function toggleAuto() {
-  if (!isRunning) startAuto(); else stopAuto();
-}
-
-function startAuto() {
-  if (!document.getElementById('video').srcObject) {
-    log('錯誤: 未偵測到預期光學串流。', 'err'); return;
-  }
-  isRunning = true;
-  lastCmd = '';
-  scanTimer = setInterval(autoTick, scanInterval);
-  document.getElementById('btnAuto').textContent = '⏸ PAUSE VECTOR ALIGN';
-  document.getElementById('btnAuto').classList.add('running');
-  document.getElementById('btnStop').style.display = 'flex';
-  log('自動循線系統與軌跡預測解算器已上線。', 'ok');
-}
-
-function stopAuto() {
-  isRunning = false;
-  clearInterval(scanTimer);
-  scanTimer = null;
-  if (isConnected) sendCmd('S');
-  updateUI('S', 'Engine Stop', null);
-  document.getElementById('btnAuto').textContent = '▰ START VECTOR ALIGN';
-  document.getElementById('btnAuto').classList.remove('running');
-  document.getElementById('btnStop').style.display = 'none';
-  log('循線控制程序掛起。', 'info');
-}
-
-function emergencyStop() {
-  stopAuto();
-  if (isConnected) { sendCmd('S'); sendCmd('S'); }
-  log('!! 觸發緊急制動安全協議 !!', 'err');
-}
-
-function toggleSettings() {
-  settingsOpen = !settingsOpen;
-  document.getElementById('settingsBody').style.display = settingsOpen ? '' : 'none';
-  document.getElementById('settingsArrow').textContent = settingsOpen ? '▼' : '▶';
-}
-
-log('遙測內核初始化完畢。請加載傳感器並綁定網絡。', 'info');
+function toggleAuto() { if (!isRunning) startAuto(); else stopAuto(); }
+function startAuto() { isRunning = true; lastCmd = ''; scanTimer = setInterval(autoTick, scanInterval); document.getElementById('btnAuto').textContent = '⏸ PAUSE VECTOR ALIGN'; document.getElementById('btnAuto').classList.add('running'); log('自駕系統與軌跡預測解算器已上線。', 'ok'); }
+function stopAuto() { isRunning = false; clearInterval(scanTimer); scanTimer = null; if (isConnected) sendCmd('S'); updateUI('S', 'Engine Stop', null); document.getElementById('btnAuto').textContent = '▰ START VECTOR ALIGN'; document.getElementById('btnAuto').classList.remove('running'); log('控制程序掛起。', 'info'); }
+function toggleSettings() { settingsOpen = !settingsOpen; document.getElementById('settingsBody').style.display = settingsOpen ? '' : 'none'; document.getElementById('settingsArrow').textContent = settingsOpen ? '▼' : '▶'; }
+log('遠端網頁通訊終端就緒。', 'info');
 </script></body></html>
-HTMLEOF
-echo "Done"
