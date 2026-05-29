@@ -1,5 +1,5 @@
 
-<!DOCTYPE html><html lang="zh-HK"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>上帝視角序列埠終端 Overlord Serial v3.1</title><style>
+<!DOCTYPE html><html lang="zh-HK"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>黃色魔鬼氈終極遙測終端 v3.2</title><style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700;900&family=Noto+Sans+HK:wght@500;700&display=swap');
   
   :root {
@@ -10,7 +10,7 @@
     
     --neon-cyan: #00f0ff;
     --neon-green: #00ff66;
-    --neon-pink: #ff007f;
+    --neon-yellow: #ffea00;
     --neon-amber: #ffaa00;
     --neon-crimson: #ff2a5f;
     
@@ -48,7 +48,7 @@
     aspect-ratio: 4/3; border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   }
   #video { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; z-index: 1; }
-  #telemetryCanvas { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  #telemetryCanvas { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 2; pointer-events: auto; cursor: crosshair; }
   #hiddenCanvas { display: none; }
 
   .cmd-display { background: var(--panel-heavy); border: 1px solid var(--border-dim); padding: 18px 24px; display: flex; align-items: center; gap: 20px; }
@@ -61,7 +61,7 @@
   .cmd-info { flex: 1; }
   .cmd-char { font-family: var(--font-display); font-size: 32px; font-weight: 900; line-height: 1; }
   .cmd-name { font-size: 11px; color: var(--text-muted); margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
-  .tracker-status { font-family: var(--font-mono); font-size: 11px; color: var(--neon-pink); text-align: right; line-height: 1.6; }
+  .tracker-status { font-family: var(--font-mono); font-size: 11px; color: var(--neon-yellow); text-align: right; line-height: 1.6; }
 
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .btn {
@@ -92,14 +92,10 @@
   .log-panel { background: var(--panel-heavy); border: 1px solid var(--border-dim); }
   .log-header { padding: 12px 20px; border-bottom: 1px solid var(--border-dim); font-family: var(--font-display); font-size: 11px; letter-spacing: 3px; color: var(--text-muted); }
   #log { padding: 14px 20px; font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,0.4); height: 100px; overflow-y: auto; line-height: 1.8; }
-  #log .info { color: var(--text-muted); }
-  #log .ok { color: var(--neon-green); }
-  #log .err { color: var(--neon-crimson); font-weight: bold; }
-  #log .cmd { color: var(--neon-amber); }
 </style></head><body>
 
 <header>
-  <h1>God's Eye Serial Terminal v3.1</h1>
+  <h1>God's Eye Velocity Terminal v3.2</h1>
   <div class="status-pill" id="statusPill">Offline</div>
 </header>
 
@@ -117,7 +113,7 @@
       <div class="cmd-name" id="cmdName">Engine Standby</div>
     </div>
     <div class="tracker-status">
-      <div id="statusCar">CAR: LOST</div>
+      <div id="statusCar">VELCRO: LOST</div>
       <div id="statusLine" style="color: var(--neon-cyan)">LINE: LOOKING</div>
     </div>
   </div>
@@ -134,45 +130,45 @@
       <div class="setting-row">
         <div class="setting-meta">
           <div>
-            <div class="setting-label">CAR TARGET HUE (紅色娃娃色彩校正)</div>
-            <div class="setting-sub">純紅色設定為 0。可微調以精準咬住娃娃 (0:紅, 60:黃, 120:綠)</div>
+            <div class="setting-label">VELCRO TARGET HUE (黃色魔鬼氈校正)</div>
+            <div class="setting-sub">預設為 45 (正黃色)。亦可直接在畫面上點擊魔鬼氈自動吸色。</div>
           </div>
-          <span class="setting-val" id="vTargetHue">0</span>
+          <span class="setting-val" id="vTargetHue">45</span>
         </div>
-        <input type="range" id="sTargetHue" min="0" max="360" value="0" oninput="targetHue=+this.value;document.getElementById('vTargetHue').textContent=this.value">
+        <input type="range" id="sTargetHue" min="0" max="360" value="45" oninput="targetHue=+this.value;document.getElementById('vTargetHue').textContent=this.value">
       </div>
 
       <div class="setting-row">
         <div class="setting-meta">
           <div>
-            <div class="setting-label">TRACKER TOLERANCE (立體娃娃色彩容錯)</div>
-            <div class="setting-sub">提高數值可包容娃娃立體產生的紅色陰影</div>
+            <div class="setting-label">COLOR TOLERANCE (黃色過濾容錯率)</div>
+            <div class="setting-sub">因應走廊光影陰影，可適度調大避免丟包</div>
           </div>
-          <span class="setting-val" id="vHueTol">40</span>
+          <span class="setting-val" id="vHueTol">30</span>
         </div>
-        <input type="range" id="sHueTol" min="10" max="80" value="40" oninput="hueTolerance=+this.value;document.getElementById('vHueTol').textContent=this.value">
+        <input type="range" id="sHueTol" min="10" max="80" value="30" oninput="hueTolerance=+this.value;document.getElementById('vHueTol').textContent=this.value">
       </div>
 
       <div class="setting-row">
         <div class="setting-meta">
           <div>
-            <div class="setting-label">LINE SENSITIVITY (跑道黑線亮度靈敏度)</div>
-            <div class="setting-sub">判定為跑道黑線的亮度上限門檻</div>
+            <div class="setting-label">CORE LINE SENSITIVITY (純黑線條敏感度)</div>
+            <div class="setting-sub">已調低至 45，強行過濾外圍白邊與大面積綠色地墊</div>
           </div>
-          <span class="setting-val" id="vBlackThresh">70</span>
+          <span class="setting-val" id="vBlackThresh">45</span>
         </div>
-        <input type="range" id="sBlackThresh" min="20" max="150" value="70" oninput="blackThreshold=+this.value;document.getElementById('vBlackThresh').textContent=this.value">
+        <input type="range" id="sBlackThresh" min="20" max="150" value="45" oninput="blackThreshold=+this.value;document.getElementById('vBlackThresh').textContent=this.value">
       </div>
 
       <div class="setting-row">
         <div class="setting-meta">
           <div>
             <div class="setting-label">LOOK-AHEAD DISTANCE (自駕預瞄距離)</div>
-            <div class="setting-sub">從娃娃重心向前延伸尋找黑線的感應半徑</div>
+            <div class="setting-sub">從魔鬼氈重心向前探索黑線跑道的像素半徑</div>
           </div>
-          <span class="setting-val" id="vLookAhead">35px</span>
+          <span class="setting-val" id="vLookAhead">30px</span>
         </div>
-        <input type="range" id="sLookAhead" min="15" max="80" value="35" oninput="lookAheadDst=+this.value;document.getElementById('vLookAhead').textContent=this.value+'px'">
+        <input type="range" id="sLookAhead" min="15" max="80" value="30" oninput="lookAheadDst=+this.value;document.getElementById('vLookAhead').textContent=this.value+'px'">
       </div>
     </div>
   </div>
@@ -189,12 +185,12 @@ let isConnected = false, isRunning = false;
 let lastCmd = '', scanTimer = null;
 let settingsOpen = true;
 
-// ── 上帝視角核心參數 (預設對應紅色娃娃) ──
-let targetHue = 0;         // 0 代表純紅色
-let hueTolerance = 40;     // 提高容錯率以適應娃娃陰影
-let blackThreshold = 70;   
-let lookAheadDst = 35;     
-let steerThreshold = 12;   
+// ── 黃色魔鬼氈專用核心參數 ──
+let targetHue = 45;        // 45 為標準亮黃色
+let hueTolerance = 30;     
+let blackThreshold = 45;   // 壓低門檻，只認極黑
+let lookAheadDst = 30;     
+let steerThreshold = 10;   // 提高轉向靈敏度
 
 let carPos = null;
 let carVector = {x: 0, y: -1}; 
@@ -206,25 +202,20 @@ function log(msg, type='info') {
   el.scrollTop = el.scrollHeight;
 }
 
-// ── 穩定高效的 Web Serial 通訊對接 ──
 async function connectSerial() {
   if (isConnected) { disconnectSerial(); return; }
   try {
-    log('請在彈出的系統選單中，點選小車對應的藍牙虛擬 COM 埠...', 'info');
+    log('請在選單中點選小車的藍牙虛擬 COM 埠...', 'info');
     serialPort = await navigator.serial.requestPort();
-    await serialPort.open({ baudRate: 115200 }); // ESP32 經典藍牙標準速率
-    
+    await serialPort.open({ baudRate: 115200 });
     serialWriter = serialPort.writable.getWriter();
     isConnected = true;
-    
     document.getElementById('btnConnect').textContent = '🔌 DISCONNECT PORT';
     document.getElementById('btnConnect').classList.add('connected');
     document.getElementById('statusPill').textContent = 'Online';
     document.getElementById('statusPill').classList.add('connected');
-    log('無線序列總線接通成功！上帝視角控制管道已完全綁定。', 'ok');
-  } catch(e) {
-    log('序列埠對接失敗: ' + e.message, 'err');
-  }
+    log('控制總線接通成功！虛擬序列端綁定。', 'ok');
+  } catch(e) { log('序列埠對接失敗: ' + e.message, 'err'); }
 }
 
 async function disconnectSerial() {
@@ -236,37 +227,29 @@ async function disconnectSerial() {
   document.getElementById('btnConnect').classList.remove('connected');
   document.getElementById('statusPill').textContent = 'Offline';
   document.getElementById('statusPill').classList.remove('connected');
-  log('通訊序列總線已安全中斷。', 'info');
+  log('通訊總線已斷開。', 'info');
 }
 
 async function sendCmd(cmd) {
   if (!serialWriter) return;
   try {
-    const data = new TextEncoder().encode(cmd);
-    await serialWriter.write(data);
-  } catch(e) {
-    log('指令發送失聯: ' + e.message, 'err');
-  }
+    await serialWriter.write(new TextEncoder().encode(cmd));
+  } catch(e) { log('指令發送失聯: ' + e.message, 'err'); }
 }
 
 async function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: 320, height: 240 }
-    });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 320, height: 240 } });
     document.getElementById('video').srcObject = stream;
     log('全景光學取景器開啟成功。', 'ok');
     document.getElementById('btnCam').textContent = '✅ LIVE';
-  } catch(e) {
-    log('相機啟動失敗: ' + e.message, 'err');
-  }
+  } catch(e) { log('相機啟動失敗: ' + e.message, 'err'); }
 }
 
 function rgbToHsv(r, g, b) {
   r /= 255; g /= 255; b /= 255;
   let max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h, s, v = max;
-  let d = max - min;
+  let h, s, v = max, d = max - min;
   s = max === 0 ? 0 : d / max;
   if (max === min) { h = 0; } 
   else {
@@ -290,21 +273,18 @@ function processOverlordFrame() {
   const hCtx = hiddenCanvas.getContext('2d');
   hCtx.drawImage(video, 0, 0, W, H);
 
-  const imgData = hCtx.getImageData(0, 0, W, H);
-  const px = imgData.data;
-
+  const px = hCtx.getImageData(0, 0, W, H).data;
   let carSumX = 0, carSumY = 0, carCount = 0;
 
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const i = (y * W + x) * 4;
-      const r = px[i], g = px[i+1], b = px[i+2];
-
-      const hsv = rgbToHsv(r, g, b);
+      const hsv = rgbToHsv(px[i], px[i+1], px[i+2]);
       let hueDiff = Math.abs(hsv.h - targetHue);
       if (hueDiff > 180) hueDiff = 360 - hueDiff;
 
-      if (hueDiff < hueTolerance && hsv.s > 25 && hsv.v > 25) {
+      // 針對黃色魔鬼氈進行高飽和、高亮度過濾，完美避開綠色地墊
+      if (hueDiff < hueTolerance && hsv.s > 30 && hsv.v > 30) {
         carSumX += x; carSumY += y; carCount++;
       }
     }
@@ -318,18 +298,16 @@ function processOverlordFrame() {
   const statusCarEl = document.getElementById('statusCar');
   const statusLineEl = document.getElementById('statusLine');
 
-  if (carCount < 6) {
-    statusCarEl.textContent = "CAR: LOST";
+  if (carCount < 5) {
+    statusCarEl.textContent = "VELCRO: LOST";
     statusCarEl.style.color = "var(--neon-crimson)";
-    return { cmd: 'S', label: 'TARGET DOLL LOST' };
+    return { cmd: 'S', label: 'YELLOW VELCRO LOST' };
   }
 
-  let cx = carSumX / carCount;
-  let cy = carSumY / carCount;
+  let cx = carSumX / carCount, cy = carSumY / carCount;
 
   if (carPos) {
-    let dx = cx - carPos.x;
-    let dy = cy - carPos.y;
+    let dx = cx - carPos.x, dy = cy - carPos.y;
     let dist = Math.hypot(dx, dy);
     if (dist > 1 && dist < 15) {
       carVector.x = carVector.x * 0.7 + (dx / dist) * 0.3;
@@ -338,46 +316,38 @@ function processOverlordFrame() {
   }
   carPos = { x: cx, y: cy };
 
-  statusCarEl.textContent = `CAR: LOCK [${Math.round(cx)},${Math.round(cy)}]`;
-  statusCarEl.style.color = "var(--neon-green)";
+  statusCarEl.textContent = `VELCRO: LOCK [${Math.round(cx)},${Math.round(cy)}]`;
+  statusCarEl.style.color = "var(--neon-yellow)";
 
-  // 繪製娃娃定位靶心 (亮紅色)
-  tCtx.strokeStyle = '#ff2a5f';
-  tCtx.lineWidth = 2;
-  tCtx.beginPath(); tCtx.arc(cx, cy, 7, 0, Math.PI*2); tCtx.stroke();
+  // 渲染黃色魔鬼氈定位靶心 (霓虹黃)
+  tCtx.strokeStyle = '#ffea00'; tCtx.lineWidth = 2;
+  tCtx.beginPath(); tCtx.arc(cx, cy, 6, 0, Math.PI*2); tCtx.stroke();
   
   let lookX = Math.round(cx + carVector.x * lookAheadDst);
   let lookY = Math.round(cy + carVector.y * lookAheadDst);
 
-  tCtx.strokeStyle = '#00f0ff';
-  tCtx.lineWidth = 1;
+  tCtx.strokeStyle = '#00f0ff'; tCtx.lineWidth = 1;
   tCtx.beginPath(); tCtx.moveTo(cx, cy); tCtx.lineTo(lookX, lookY); tCtx.stroke();
-  tCtx.beginPath(); tCtx.arc(lookX, lookY, 12, 0, Math.PI*2); tCtx.stroke();
+  tCtx.beginPath(); tCtx.arc(lookX, lookY, 10, 0, Math.PI*2); tCtx.stroke();
 
-  let lineSumX = 0, lineSumY = 0, lineCount = 0;
-  let searchR = 14;
+  let lineSumX = 0, lineSumY = 0, lineCount = 0, searchR = 12;
 
   for (let sy = Math.max(0, lookY - searchR); sy < Math.min(H, lookY + searchR); sy++) {
     for (let sx = Math.max(0, lookX - searchR); sx < Math.min(W, lookX + searchR); sx++) {
       let i = (sy * W + sx) * 4;
-      let v = Math.max(px[i], px[i+1], px[i+2]);
-      if (v < blackThreshold) {
+      if (Math.max(px[i], px[i+1], px[i+2]) < blackThreshold) {
         lineSumX += sx; lineSumY += sy; lineCount++;
       }
     }
   }
 
-  if (lineCount < 4) {
-    statusLineEl.textContent = "LINE: LOST";
-    statusLineEl.style.color = "var(--neon-crimson)";
-    return { cmd: 'S', label: 'PATH LINE LOST' };
+  if (lineCount < 3) {
+    statusLineEl.textContent = "LINE: LOST"; statusLineEl.style.color = "var(--neon-crimson)";
+    return { cmd: 'S', label: 'TRACK LINE LOST' };
   }
 
-  let targetX = lineSumX / lineCount;
-  let targetY = lineSumY / lineCount;
-
-  statusLineEl.textContent = "LINE: LOCK";
-  statusLineEl.style.color = "var(--neon-green)";
+  let targetX = lineSumX / lineCount, targetY = lineSumY / lineCount;
+  statusLineEl.textContent = "LINE: LOCK"; statusLineEl.style.color = "var(--neon-green)";
 
   tCtx.fillStyle = '#00ff66';
   tCtx.beginPath(); tCtx.arc(targetX, targetY, 4, 0, Math.PI*2); tCtx.fill();
@@ -385,28 +355,21 @@ function processOverlordFrame() {
   let targetVec = { x: targetX - cx, y: targetY - cy };
   let angleCar = Math.atan2(carVector.y, carVector.x);
   let angleTarget = Math.atan2(targetVec.y, targetVec.x);
-  
   let angleDiff = (angleTarget - angleCar) * (180 / Math.PI);
+  
   if (angleDiff > 180) angleDiff -= 360;
   if (angleDiff < -180) angleDiff += 360;
 
-  if (angleDiff < -steerThreshold) {
-    return { cmd: 'G', label: 'OVERLORD: STEER LEFT', dev: Math.round(angleDiff) };
-  } else if (angleDiff > steerThreshold) {
-    return { cmd: 'H', label: 'OVERLORD: STEER RIGHT', dev: Math.round(angleDiff) };
-  } else {
-    return { cmd: 'F', label: 'OVERLORD: ALIGNED RUN', dev: Math.round(angleDiff) };
-  }
+  if (angleDiff < -steerThreshold) return { cmd: 'G', label: 'OVERLORD: STEER LEFT', dev: Math.round(angleDiff) };
+  if (angleDiff > steerThreshold) return { cmd: 'H', label: 'OVERLORD: STEER RIGHT', dev: Math.round(angleDiff) };
+  return { cmd: 'F', label: 'OVERLORD: ALIGNED RUN', dev: Math.round(angleDiff) };
 }
 
 const CMD_ARROWS = { F:'▲', G:'◀', H:'▶', S:'■' };
 const CMD_COLORS = { F:'cmd-F', G:'cmd-L', H:'cmd-R', S:'cmd-S' };
 
 function updateTelemetryUI(cmd, label, dev) {
-  const arrowEl = document.getElementById('cmdArrow');
-  const charEl  = document.getElementById('cmdChar');
-  const nameEl  = document.getElementById('cmdName');
-  
+  const arrowEl = document.getElementById('cmdArrow'), charEl = document.getElementById('cmdChar'), nameEl = document.getElementById('cmdName');
   arrowEl.textContent = CMD_ARROWS[cmd] || '■';
   arrowEl.className = 'cmd-arrow ' + (CMD_COLORS[cmd] || 'cmd-S');
   charEl.textContent = cmd;
@@ -417,42 +380,43 @@ async function autoTick() {
   if (!isRunning) return;
   const decision = processOverlordFrame();
   if (!decision) return;
-
   updateTelemetryUI(decision.cmd, decision.label, decision.dev);
-
   if (decision.cmd !== lastCmd) {
     lastCmd = decision.cmd;
-    if (isConnected) {
-      await sendCmd(decision.cmd);
-      log(`全局序列傳輸 → [${decision.cmd}] ${decision.label}`, 'cmd');
-    }
+    if (isConnected) { await sendCmd(decision.cmd); }
   }
 }
 
 function toggleAuto() { if (!isRunning) startAuto(); else stopAuto(); }
 function startAuto() {
-  isRunning = true; lastCmd = '';
-  scanTimer = setInterval(autoTick, 60); // 60ms 高速極限採樣
+  isRunning = true; lastCmd = ''; scanTimer = setInterval(autoTick, 60);
   document.getElementById('btnAuto').textContent = '⏸ PAUSE OVERLORD CONTROL';
   document.getElementById('btnAuto').classList.add('running');
-  log('上帝視角軌跡序列解算引擎已全面上線。', 'ok');
+  log('黃色魔鬼氈全局序列埠解算引擎上線。', 'ok');
 }
-
 function stopAuto() {
-  isRunning = false;
-  clearInterval(scanTimer); scanTimer = null;
+  isRunning = false; clearInterval(scanTimer); scanTimer = null;
   if (isConnected) sendCmd('S');
   updateTelemetryUI('S', 'Engine Standby');
   document.getElementById('btnAuto').textContent = '▰ START OVERLORD AUTO';
   document.getElementById('btnAuto').classList.remove('running');
-  log('全局序列追蹤暫停。', 'info');
+  log('控制程序掛起。', 'info');
 }
+function toggleSettings() { settingsOpen = !settingsOpen; document.getElementById('settingsBody').style.display = settingsOpen ? '' : 'none'; document.getElementById('settingsArrow').textContent = settingsOpen ? '▼' : '▶'; }
 
-function toggleSettings() {
-  settingsOpen = !settingsOpen;
-  document.getElementById('settingsBody').style.display = settingsOpen ? '' : 'none';
-  document.getElementById('settingsArrow').textContent = settingsOpen ? '▼' : '▶';
-}
+// 💡 點擊相機畫面自動精準吸取顏色
+document.getElementById('telemetryCanvas').addEventListener('click', function(e) {
+  const video = document.getElementById('video'); if (video.readyState < 2) return;
+  const rect = this.getBoundingClientRect();
+  const x = Math.floor(((e.clientX - rect.left) / rect.width) * 160), y = Math.floor(((e.clientY - rect.top) / rect.height) * 120);
+  const hCtx = document.getElementById('hiddenCanvas').getContext('2d');
+  const p = hCtx.getImageData(x, y, 1, 1).data;
+  const hsv = rgbToHsv(p[0], p[1], p[2]);
+  targetHue = Math.round(hsv.h);
+  document.getElementById('sTargetHue').value = targetHue;
+  document.getElementById('vTargetHue').textContent = targetHue;
+  log(`【智能色彩定位】已鎖定目標魔鬼氈色彩特徵！HUE 核心值: ${targetHue}`, 'ok');
+});
 
-log('上帝視角序列埠終端準備就緒。請在小車放置紅色娃娃。', 'info');
+log('上帝視角序列埠終端 v3.2 就緒。請在小車貼上黃色魔鬼氈。', 'info');
 </script></body></html>
