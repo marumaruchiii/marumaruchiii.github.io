@@ -223,8 +223,16 @@ function log(msg, type='info') {
 async function connectBT() {
   if (isConnected) { disconnectBT(); return; }
   try {
-    log('執行全總線極限盲搜...', 'info');
-    btDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+    log('正在精準搜尋核心藍牙網關...', 'info');
+    
+    // 💡 重新鎖定：只顯示名稱開頭是 "ESP32" 的裝置，過濾所有無關的垃圾訊號！
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [
+        { namePrefix: 'ESP32' }
+      ],
+      // 💡 同時強制允許對接經典藍牙 SPP 的通訊服務
+      optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
+    });
     log(`對接硬體: ${btDevice.name}`, 'ok');
     const server = await btDevice.gatt.connect();
     
