@@ -1,0 +1,498 @@
+<!DOCTYPE html><html lang="zh-HK"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>上帝視角自駕終端 Overlord v3.0</title><style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700;900&family=Noto+Sans+HK:wght@500;700&display=swap');
+  
+  :root {
+    --bg-base: #05070a;
+    --panel-heavy: #0a0e17;
+    --panel-light: #101624;
+    --border-dim: #162035;
+    
+    --neon-cyan: #00f0ff;
+    --neon-green: #00ff66;
+    --neon-pink: #ff007f;
+    --neon-amber: #ffaa00;
+    --neon-crimson: #ff2a5f;
+    
+    --text-pure: #ffffff;
+    --text-muted: #5c7094;
+    --text-ghost: #26354d;
+    
+    --font-display: 'Orbitron', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Noto Sans HK', sans-serif;
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg-base); color: var(--text-pure); font-family: var(--font-sans); min-height: 100vh; overflow-x: hidden; }
+  
+  /* Scanline Overlay */
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 240, 255, 0.01) 2px, rgba(0, 240, 255, 0.01) 4px);
+    pointer-events: none; z-index: 999;
+  }
+
+  header {
+    padding: 20px; border-bottom: 2px solid var(--border-dim);
+    display: flex; align-items: center; background: var(--panel-heavy);
+  }
+  header h1 { font-family: var(--font-display); font-size: 14px; letter-spacing: 4px; text-transform: uppercase; }
+  
+  .status-pill {
+    margin-left: auto; font-family: var(--font-mono); font-size: 10px; padding: 5px 12px;
+    border: 1px solid var(--text-ghost); color: var(--text-muted); background: rgba(0,0,0,0.3); letter-spacing: 1.5px;
+  }
+  .status-pill.connected { border-color: var(--neon-green); color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+
+  main { padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto; }
+  
+  /* Viewport View */
+  .viewport-container {
+    position: relative; border: 1px solid var(--border-dim); background: #000;
+    aspect-ratio: 4/3; border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  }
+  #video { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; z-index: 1; }
+  #telemetryCanvas { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  #hiddenCanvas { display: none; }
+
+  /* UI Cards */
+  .cmd-display {
+    background: var(--panel-heavy); border: 1px solid var(--border-dim);
+    padding: 18px 24px; display: flex; align-items: center; gap: 20px;
+  }
+  .cmd-arrow { font-family: var(--font-display); font-size: 36px; min-width: 50px; text-align: center; }
+  .cmd-F { color: var(--neon-green); filter: drop-shadow(0 0 8px var(--neon-green)); }
+  .cmd-L { color: var(--neon-cyan); filter: drop-shadow(0 0 8px var(--neon-cyan)); }
+  .cmd-R { color: var(--neon-cyan); filter: drop-shadow(0 0 8px var(--neon-cyan)); }
+  .cmd-S { color: var(--text-muted); }
+  
+  .cmd-info { flex: 1; }
+  .cmd-char { font-family: var(--font-display); font-size: 32px; font-weight: 900; line-height: 1; }
+  .cmd-name { font-size: 11px; color: var(--text-muted); margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+  .tracker-status { font-family: var(--font-mono); font-size: 11px; color: var(--neon-pink); text-align: right; line-height: 1.6; }
+
+  /* Control Panel Matrix */
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn {
+    padding: 16px; background: var(--panel-light); border: 1px solid var(--border-dim);
+    color: var(--text-pure); font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-tap-highlight-color: transparent;
+  }
+  .btn:hover { background: var(--border-dim); }
+  .btn-connect { color: var(--neon-cyan); border-color: rgba(0, 240, 255, 0.2); }
+  .btn-connect.connected { color: var(--neon-green); border-color: var(--neon-green); background: rgba(0,255,102,0.02); }
+  .btn-auto { grid-column: 1 / -1; padding: 18px; font-size: 13px; color: var(--neon-green); border-color: rgba(0, 255, 102, 0.2); }
+  .btn-auto.running { background: rgba(0, 255, 102, 0.1); border-color: var(--text-pure); animation: pulseGlow 2s infinite; }
+  @keyframes pulseGlow { 0%,100%{box-shadow:0 0 10px rgba(0,255,102,0.2);} 50%{box-shadow:0 0 25px rgba(0,255,102,0.4);} }
+
+  /* Config Slider Grid */
+  .settings-panel { background: var(--panel-heavy); border: 1px solid var(--border-dim); }
+  .settings-header { padding: 14px 20px; border-bottom: 1px solid var(--border-dim); font-family: var(--font-display); font-size: 11px; letter-spacing: 3px; color: var(--text-muted); cursor: pointer; display: flex; justify-content: space-between; }
+  .settings-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .setting-row { display: flex; flex-direction: column; gap: 6px; }
+  .setting-meta { display: flex; justify-content: space-between; align-items: flex-end; }
+  .setting-label { font-size: 12px; font-weight: 700; }
+  .setting-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .setting-val { font-family: var(--font-mono); font-size: 12px; color: var(--neon-cyan); background: rgba(0,0,0,0.4); padding: 2px 8px; border: 1px solid var(--border-dim); }
+  
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--border-dim); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan); cursor: pointer; }
+
+  /* Diagnostic Log Terminal */
+  .log-panel { background: var(--panel-heavy); border: 1px solid var(--border-dim); }
+  .log-header { padding: 12px 20px; border-bottom: 1px solid var(--border-dim); font-family: var(--font-display); font-size: 11px; letter-spacing: 3px; color: var(--text-muted); }
+  #log { padding: 14px 20px; font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,0.4); height: 100px; overflow-y: auto; line-height: 1.8; }
+  #log .info { color: var(--text-muted); }
+  #log .ok { color: var(--neon-green); }
+  #log .err { color: var(--neon-crimson); font-weight: bold; }
+  #log .cmd { color: var(--neon-amber); }
+</style></head><body>
+
+<header>
+  <h1>God's Eye Telemetry Terminal</h1>
+  <div class="status-pill" id="statusPill">Offline</div>
+</header>
+
+<main>
+  <div class="viewport-container">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="telemetryCanvas"></canvas>
+    <canvas id="hiddenCanvas"></canvas>
+  </div>
+
+  <div class="cmd-display">
+    <div class="cmd-arrow cmd-S" id="cmdArrow">■</div>
+    <div class="cmd-info">
+      <div class="cmd-char" id="cmdChar">S</div>
+      <div class="cmd-name" id="cmdName">Engine Standby</div>
+    </div>
+    <div class="tracker-status">
+      <div id="statusCar">CAR: LOST</div>
+      <div id="statusLine" style="color: var(--neon-cyan)">LINE: LOOKING</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-connect" id="btnConnect" onclick="connectBT()">⚡ CONNECT BT</button>
+    <button class="btn" id="btnCam" onclick="startCamera()">📷 OPEN WEBCAM</button>
+    <button class="btn btn-auto" id="btnAuto" onclick="toggleAuto()">▰ START OVERLORD AUTO</button>
+  </div>
+
+  <div class="settings-panel">
+    <div class="settings-header" onclick="toggleSettings()">TACTICAL CALIBRATION <span id="settingsArrow">▼</span></div>
+    <div class="settings-body" id="settingsBody">
+      <div class="setting-row">
+        <div class="setting-meta">
+          <div>
+            <div class="setting-label">CAR TARGET HUE (車頂標記色彩偏向)</div>
+            <div class="setting-sub">調整捕捉車頂圓卡紙的色彩中心 (0:紅, 60:黃, 120:綠, 300:粉紅)</div>
+          </div>
+          <span class="setting-val" id="vTargetHue">340</span>
+        </div>
+        <input type="range" id="sTargetHue" min="0" max="360" value="340" oninput="targetHue=+this.value;document.getElementById('vTargetHue').textContent=this.value">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-meta">
+          <div>
+            <div class="setting-label">TRACKER TOLERANCE (色彩容錯率)</div>
+            <div class="setting-sub">車頂標記色彩過濾強度</div>
+          </div>
+          <span class="setting-val" id="vHueTol">25</span>
+        </div>
+        <input type="range" id="sHueTol" min="10" max="80" value="25" oninput="hueTolerance=+this.value;document.getElementById('vHueTol').textContent=this.value">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-meta">
+          <div>
+            <div class="setting-label">LINE SENSITIVITY (地面黑線靈敏度)</div>
+            <div class="setting-sub">判定為黑線的亮度上限門檻</div>
+          </div>
+          <span class="setting-val" id="vBlackThresh">70</span>
+        </div>
+        <input type="range" id="sBlackThresh" min="20" max="150" value="70" oninput="blackThreshold=+this.value;document.getElementById('vBlackThresh').textContent=this.value">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-meta">
+          <div>
+            <div class="setting-label">LOOK-AHEAD DISTANCE (自駕預瞄距離)</div>
+            <div class="setting-sub">尋找前方導航黑線的像素感應半徑</div>
+          </div>
+          <span class="setting-val" id="vLookAhead">35px</span>
+        </div>
+        <input type="range" id="sLookAhead" min="15" max="80" value="35" oninput="lookAheadDst=+this.value;document.getElementById('vLookAhead').textContent=this.value+'px'">
+      </div>
+    </div>
+  </div>
+
+  <div class="log-panel">
+    <div class="log-header">DIAGNOSTICS LOG</div>
+    <div id="log"></div>
+  </div>
+</main>
+
+<script>
+let btDevice = null, btChar = null;
+let isConnected = false, isRunning = false;
+let lastCmd = '', scanTimer = null;
+let settingsOpen = true;
+
+// ── 全景分析核心參數 ──
+let targetHue = 340;       // 預設追蹤粉紅色車頂
+let hueTolerance = 25;     // 色彩對比容錯
+let blackThreshold = 70;   // 黑線閾值
+let lookAheadDst = 35;     // 預瞄像素距離
+let steerThreshold = 12;   // 轉向偏差死區(度)
+
+// 座標歷史記錄（用以計算小車移動車頭向量）
+let carPos = null;
+let carVector = {x: 0, y: -1}; 
+
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const t = new Date().toLocaleTimeString('zh',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML += `<div class="${type}">[${t}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+  while (el.children.length > 20) el.removeChild(el.firstChild);
+}
+
+// ── 藍牙免限制盲搜接通 ──
+async function connectBT() {
+  if (isConnected) { disconnectBT(); return; }
+  try {
+    log('執行全總線極限盲搜...', 'info');
+    btDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+    log(`對接硬體: ${btDevice.name}`, 'ok');
+    const server = await btDevice.gatt.connect();
+    
+    const services = await server.getPrimaryServices();
+    if (services.length === 0) throw new Error('該裝置未開放任何網路可用服務');
+    
+    const service = services[0];
+    const chars = await service.getCharacteristics();
+    btChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse) || chars[0];
+    
+    isConnected = true;
+    document.getElementById('btnConnect').textContent = '🔌 DISCONNECT';
+    document.getElementById('btnConnect').classList.add('connected');
+    document.getElementById('statusPill').textContent = 'Online';
+    document.getElementById('statusPill').classList.add('connected');
+    log('控制總線強制接通，連線成功！', 'ok');
+  } catch(e) {
+    log('通訊終端建構失敗: ' + (e.message||e), 'err');
+  }
+}
+
+function disconnectBT() {
+  if (isRunning) stopAuto();
+  if (btDevice && btDevice.gatt.connected) { sendCmd('S'); btDevice.gatt.disconnect(); }
+  isConnected = false; btChar = null;
+  document.getElementById('btnConnect').textContent = '⚡ CONNECT BT';
+  document.getElementById('btnConnect').classList.remove('connected');
+  document.getElementById('statusPill').textContent = 'Offline';
+  document.getElementById('statusPill').classList.remove('connected');
+  log('藍牙總線中斷。', 'err');
+}
+
+async function sendCmd(cmd) {
+  if (!btChar) return;
+  try {
+    const data = new TextEncoder().encode(cmd);
+    if (btChar.properties.writeWithoutResponse) {
+      await btChar.writeValueWithoutResponse(data);
+    } else {
+      await btChar.writeValue(data);
+    }
+  } catch(e) {
+    log('指令丟包: ' + e.message, 'err');
+  }
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: 320, height: 240 } // 高速分析畫幅
+    });
+    document.getElementById('video').srcObject = stream;
+    log('全景光學取景器已接通。', 'ok');
+    document.getElementById('btnCam').textContent = '✅ LIVE';
+  } catch(e) {
+    log('相機啟動失敗: ' + e.message, 'err');
+  }
+}
+
+// ── RGB 轉 HSV 工具 ──
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  let max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, v = max;
+  let d = max - min;
+  s = max === 0 ? 0 : d / max;
+  if (max === min) { h = 0; } 
+  else {
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s: s * 100, v: v * 100 };
+}
+
+// ── 上帝視角核心影像追蹤解算器 ──
+function processOverlordFrame() {
+  const video = document.getElementById('video');
+  if (video.readyState < 2) return;
+
+  const W = 160, H = 120;
+  const hiddenCanvas = document.getElementById('hiddenCanvas');
+  hiddenCanvas.width = W; hiddenCanvas.height = H;
+  const hCtx = hiddenCanvas.getContext('2d');
+  hCtx.drawImage(video, 0, 0, W, H);
+
+  const imgData = hCtx.getImageData(0, 0, W, H);
+  const px = imgData.data;
+
+  let carSumX = 0, carSumY = 0, carCount = 0;
+
+  // 1. 執行全畫幅掃描：尋找小車彩色標記
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const r = px[i], g = px[i+1], b = px[i+2];
+
+      const hsv = rgbToHsv(r, g, b);
+      // 顏色過濾演算法
+      let hueDiff = Math.abs(hsv.h - targetHue);
+      if (hueDiff > 180) hueDiff = 360 - hueDiff;
+
+      if (hueDiff < hueTolerance && hsv.s > 35 && hsv.v > 30) {
+        carSumX += x; carSumY += y; carCount++;
+      }
+    }
+  }
+
+  // 渲染畫布初始化
+  const telCanvas = document.getElementById('telemetryCanvas');
+  telCanvas.width = W; telCanvas.height = H;
+  const tCtx = telCanvas.getContext('2d');
+  tCtx.clearRect(0, 0, W, H);
+
+  const statusCarEl = document.getElementById('statusCar');
+  const statusLineEl = document.getElementById('statusLine');
+
+  if (carCount < 8) {
+    statusCarEl.textContent = "CAR: LOST";
+    statusCarEl.style.color = "var(--neon-crimson)";
+    return { cmd: 'S', label: 'TARGET CAR LOST' };
+  }
+
+  // 計算小車當前中心點
+  let cx = carSumX / carCount;
+  let cy = carSumY / carCount;
+
+  // 計算動態前導方向向量（平滑濾波）
+  if (carPos) {
+    let dx = cx - carPos.x;
+    let dy = cy - carPos.y;
+    let dist = Math.hypot(dx, dy);
+    if (dist > 1 && dist < 15) { // 有效移動才更新方向
+      carVector.x = carVector.x * 0.7 + (dx / dist) * 0.3;
+      carVector.y = carVector.y * 0.7 + (dy / dist) * 0.3;
+    }
+  }
+  carPos = { x: cx, y: cy };
+
+  statusCarEl.textContent = `CAR: LOCK [${Math.round(cx)},${Math.round(cy)}]`;
+  statusCarEl.style.color = "var(--neon-green)";
+
+  // 繪製車頂追蹤靶心
+  tCtx.strokeStyle = '#ff007f';
+  tCtx.lineWidth = 2;
+  tCtx.beginPath(); tCtx.arc(cx, cy, 6, 0, Math.PI*2); tCtx.stroke();
+  
+  // 2. 預瞄定位：沿著小車前導方向延伸 lookAheadDst 像素尋找前方黑線
+  let lookX = Math.round(cx + carVector.x * lookAheadDst);
+  let lookY = Math.round(cy + carVector.y * lookAheadDst);
+
+  // 繪製前導方向預瞄線與探索扇區
+  tCtx.strokeStyle = '#00f0ff';
+  tCtx.lineWidth = 1;
+  tCtx.beginPath(); tCtx.moveTo(cx, cy); tCtx.lineTo(lookX, lookY); tCtx.stroke();
+  tCtx.beginPath(); tCtx.arc(lookX, lookY, 12, 0, Math.PI*2); tCtx.stroke();
+
+  // 在預瞄點半徑內，搜尋最精準的黑線幾何質心
+  let lineSumX = 0, lineSumY = 0, lineCount = 0;
+  let searchR = 14;
+
+  for (let sy = Math.max(0, lookY - searchR); sy < Math.min(H, lookY + searchR); sy++) {
+    for (let sx = Math.max(0, lookX - searchR); sx < Math.min(W, lookX + searchR); sx++) {
+      let i = (sy * W + sx) * 4;
+      let v = Math.max(px[i], px[i+1], px[i+2]); // 亮度值
+      if (v < blackThreshold) {
+        lineSumX += sx; lineSumY += sy; lineCount++;
+      }
+    }
+  }
+
+  if (lineCount < 4) {
+    statusLineEl.textContent = "LINE: LOST";
+    statusLineEl.style.color = "var(--neon-crimson)";
+    return { cmd: 'S', label: 'PATH LINE LOST' };
+  }
+
+  let targetX = lineSumX / lineCount;
+  let targetY = lineSumY / lineCount;
+
+  statusLineEl.textContent = "LINE: LOCK";
+  statusLineEl.style.color = "var(--neon-green)";
+
+  // 繪製黑線目標鎖定點
+  tCtx.fillStyle = '#00ff66';
+  tCtx.beginPath(); tCtx.arc(targetX, targetY, 4, 0, Math.PI*2); tCtx.fill();
+
+  // 3. 多元幾何運算：計算車頭向量與黑線導航點的角度差
+  let targetVec = { x: targetX - cx, y: targetY - cy };
+  let angleCar = Math.atan2(carVector.y, carVector.x);
+  let angleTarget = Math.atan2(targetVec.y, targetVec.x);
+  
+  let angleDiff = (angleTarget - angleCar) * (180 / Math.PI);
+  // 正規化角度在 -180 ~ 180 度之間
+  if (angleDiff > 180) angleDiff -= 360;
+  if (angleDiff < -180) angleDiff += 360;
+
+  // 根據角度偏差，完美對接到你車子的平滑轉彎指令 (G 與 H)
+  if (angleDiff < -steerThreshold) {
+    return { cmd: 'G', label: 'OVERLORD: STEER LEFT', dev: Math.round(angleDiff) };
+  } else if (angleDiff > steerThreshold) {
+    return { cmd: 'H', label: 'OVERLORD: STEER RIGHT', dev: Math.round(angleDiff) };
+  } else {
+    return { cmd: 'F', label: 'OVERLORD: ALIGNED RUN', dev: Math.round(angleDiff) };
+  }
+}
+
+const CMD_ARROWS = { F:'▲', B:'▼', L:'◀', R:'▶', G:'◀', H:'▶', S:'■' };
+const CMD_COLORS = { F:'cmd-F', G:'cmd-L', H:'cmd-R', S:'cmd-S' };
+
+function updateTelemetryUI(cmd, label, dev) {
+  const arrowEl = document.getElementById('cmdArrow');
+  const charEl  = document.getElementById('cmdChar');
+  const nameEl  = document.getElementById('cmdName');
+  
+  arrowEl.textContent = CMD_ARROWS[cmd] || '■';
+  arrowEl.className = 'cmd-arrow ' + (CMD_COLORS[cmd] || 'cmd-S');
+  charEl.textContent = cmd;
+  nameEl.textContent = label + (dev !== undefined ? ` (${dev}°)` : '');
+}
+
+async function autoTick() {
+  if (!isRunning) return;
+  const decision = processOverlordFrame();
+  if (!decision) return;
+
+  updateTelemetryUI(decision.cmd, decision.label, decision.dev);
+
+  if (decision.cmd !== lastCmd) {
+    lastCmd = decision.cmd;
+    if (isConnected) {
+      await sendCmd(decision.cmd);
+      log(`全局遙控發射 → [${decision.cmd}] ${decision.label}`, 'cmd');
+    }
+  }
+}
+
+function toggleAuto() {
+  if (!isRunning) {
+    isRunning = true;
+    lastCmd = '';
+    scanTimer = setInterval(autoTick, 60); // 🚀 高速即時循環
+    document.getElementById('btnAuto').textContent = '⏸ PAUSE OVERLORD CONTROL';
+    document.getElementById('btnAuto').classList.add('running');
+    log('上帝視角軌跡解算引擎已全面上線。', 'ok');
+  } else {
+    stopAuto();
+  }
+}
+
+function stopAuto() {
+  isRunning = false;
+  clearInterval(scanTimer);
+  scanTimer = null;
+  if (isConnected) sendCmd('S');
+  updateTelemetryUI('S', 'Engine Standby');
+  document.getElementById('btnAuto').textContent = '▰ START OVERLORD AUTO';
+  document.getElementById('btnAuto').classList.remove('running');
+  log('全局追蹤掛起，引擎暫停。', 'info');
+}
+
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settingsBody').style.display = settingsOpen ? '' : 'none';
+  document.getElementById('settingsArrow').textContent = settingsOpen ? '▼' : '▶';
+}
+log('上帝視角終端核心就緒。請架設高空傳感器。', 'info');
+</script></body></html>
